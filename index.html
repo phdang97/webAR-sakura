@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
     <title>PHD Sakura - Trải nghiệm AR</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
@@ -883,39 +883,33 @@
             // Draw WebGL Content
             ctx.drawImage(canvas, 0, 0, w, h);
 
-            // Draw Watermark (Only if tracking)
+            // Draw Watermark (Only if tracking) - syncing with UI
             if (STATE.isTracking) {
-                const cardW = 160;
-                const cardH = 60;
-                const cardX = w - cardW - 40;
-                const cardY = 40;
+                // Heuristic scaling for visibility on video resolution
+                const scale = w / 1000; 
+                const fontSizeMain = Math.max(24, 40 * scale);
+                const fontSizeSub = fontSizeMain * 0.35;
+                const margin = 30 * (w/500); // dynamic margin
+
+                const x = margin;
+                const y = margin + fontSizeMain; // approximate baseline
 
                 ctx.save();
-                ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
-                ctx.shadowBlur = 10;
-                ctx.shadowOffsetY = 4;
+                
+                // Main Text "PHD" matching UI Gradient
+                ctx.font = `800 ${fontSizeMain}px 'Montserrat', sans-serif`;
+                const gradient = ctx.createLinearGradient(x, y - fontSizeMain, x + (fontSizeMain * 2.5), y);
+                gradient.addColorStop(0, '#1f4388');
+                gradient.addColorStop(1, '#e91e63');
+                ctx.fillStyle = gradient;
+                ctx.textAlign = "left";
+                ctx.fillText("PHD", x, y);
 
-                ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-                ctx.beginPath();
-                if(ctx.roundRect) {
-                    ctx.roundRect(cardX, cardY, cardW, cardH, 12);
-                } else {
-                    ctx.rect(cardX, cardY, cardW, cardH); // Fallback
-                }
-                ctx.fill();
-
-                ctx.shadowColor = "transparent";
-                ctx.textAlign = "center";
-                ctx.fillStyle = "#1f4388";
-                // Ensure font available or fallback
-                ctx.font = "900 32px sans-serif"; 
-                ctx.fillText("PHD", cardX + cardW / 2, cardY + 38);
-
-                ctx.font = "700 8px sans-serif";
-                ctx.fillStyle = "#e60012";
-                ctx.fillText("UNIQUELY", cardX + cardW / 2 - 20, cardY + 50);
-                ctx.fillStyle = "#007b3e";
-                ctx.fillText("YOURS", cardX + cardW / 2 + 25, cardY + 50);
+                // Sub Text "AR EXPERIENCE"
+                ctx.font = `500 ${fontSizeSub}px 'Montserrat', sans-serif`;
+                ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+                // Canvas text letter spacing is generally standard
+                ctx.fillText("AR EXPERIENCE", x, y + fontSizeSub * 1.5);
 
                 ctx.restore();
             }
