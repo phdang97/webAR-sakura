@@ -4,23 +4,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>JCB Sakura - High Fidelity AR</title>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>JCB Sakura - AR Camera</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
+        :root {
+            --primary-color: #e91e63;
+            --glass-bg: rgba(0, 0, 0, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-color: #ffffff;
+        }
+
         * {
             -webkit-tap-highlight-color: transparent;
             user-select: none;
+            box-sizing: border-box;
         }
 
         body {
             margin: 0;
             overflow: hidden;
-            font-family: 'Nunito', sans-serif;
+            font-family: 'Montserrat', sans-serif;
             background-color: #000;
-            touch-action: none;
         }
 
+        /* --- UI LAYER WRAPPER --- */
         #ui-layer {
             position: absolute;
             top: 0;
@@ -34,445 +42,350 @@
             justify-content: space-between;
         }
 
-        /* Loading Screen - Enhanced */
-        #loading-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #1a1a1a 0%, #000 100%);
-            z-index: 99;
+        /* --- HEADER AREA --- */
+        .camera-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%);
+            pointer-events: auto;
+        }
+
+        /* Logo Area */
+        .brand-pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-logo {
+            font-weight: 800;
+            font-size: 20px;
+            background: linear-gradient(135deg, #fff 0%, #ffcbd6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(233, 30, 99, 0.3);
+        }
+
+        .brand-tagline {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255,255,255,0.7);
+            border-left: 1px solid rgba(255,255,255,0.3);
+            padding-left: 10px;
+        }
+
+        /* Top Controls */
+        .top-controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        .icon-btn {
+            background: var(--glass-bg);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
             display: flex;
             justify-content: center;
             align-items: center;
-            flex-direction: column;
-            transition: opacity 0.5s;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
         }
 
-        .tech-spinner {
-            width: 60px;
-            height: 60px;
-            border: 3px solid rgba(233, 30, 99, 0.2);
-            border-top: 3px solid #e91e63;
-            border-radius: 50%;
-            animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
-            margin-bottom: 20px;
-            box-shadow: 0 0 15px rgba(233, 30, 99, 0.5);
+        .icon-btn:active {
+            transform: scale(0.92);
+            background: rgba(255, 255, 255, 0.2);
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .icon-svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
         }
 
-        .loading-text {
-            color: #e91e63;
-            font-weight: 700;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 1; }
-        }
-
-        .loading-progress {
-            width: 200px;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            margin-top: 15px;
-            overflow: hidden;
-        }
-
-        .loading-progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #e91e63, #ff6b9d);
-            width: 0%;
-            transition: width 0.3s ease;
-            box-shadow: 0 0 10px rgba(233, 30, 99, 0.5);
-        }
-
-        /* Guide Box - Improved */
-        #guide-box {
+        /* --- GUIDE / SCANNING AREA --- */
+        #scan-guide {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(15px);
-            padding: 16px 32px;
-            border-radius: 40px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: #fff;
-            font-weight: 600;
-            font-size: 15px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            transition: all 0.3s;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translate(-50%, -50%) translateY(0px); }
-            50% { transform: translate(-50%, -50%) translateY(-10px); }
-        }
-
-        .guide-icon {
-            font-size: 24px;
-            animation: rotate-icon 3s linear infinite;
-        }
-
-        @keyframes rotate-icon {
-            0%, 100% { transform: rotate(0deg); }
-            50% { transform: rotate(15deg); }
-        }
-
-        /* JCB Logo - Enhanced Top Right */
-        #jcb-card-container {
-            position: absolute;
-            top: 25px;
-            right: 25px;
-            transform: translateY(-30px) scale(0.9);
-            opacity: 0;
-            transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            pointer-events: none;
-            z-index: 20;
-        }
-
-        #jcb-card-container.visible {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-
-        .jcb-glass {
-            background: rgba(255, 255, 255, 0.18);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1.5px solid rgba(255, 255, 255, 0.4);
-            border-radius: 18px;
-            padding: 12px 24px;
-            box-shadow: 
-                0 10px 40px rgba(0, 0, 0, 0.3),
-                inset 0 0 0 1px rgba(255, 255, 255, 0.2),
-                0 0 60px rgba(31, 67, 136, 0.2);
             text-align: center;
-            position: relative;
-            overflow: hidden;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
         }
 
-        .jcb-glass::before {
+        .scan-frame {
+            width: 250px;
+            height: 250px;
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            position: relative;
+            margin: 0 auto 16px auto;
+            animation: breathe 3s infinite ease-in-out;
+        }
+
+        /* Corners for the scan frame */
+        .scan-frame::before, .scan-frame::after, 
+        .scan-frame-inner::before, .scan-frame-inner::after {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(60deg, transparent, rgba(255, 255, 255, 0.5), transparent);
-            transform: rotate(45deg);
-            animation: shimmer 4s ease-in-out infinite;
-            pointer-events: none;
+            width: 20px;
+            height: 20px;
+            border-color: #fff;
+            border-style: solid;
+            border-width: 0;
+            transition: all 0.3s;
         }
 
-        @keyframes shimmer {
-            0% { transform: translateX(-150%) rotate(45deg); }
-            100% { transform: translateX(150%) rotate(45deg); }
+        .scan-frame::before { top: -1px; left: -1px; border-top-width: 3px; border-left-width: 3px; border-top-left-radius: 20px; }
+        .scan-frame::after { top: -1px; right: -1px; border-top-width: 3px; border-right-width: 3px; border-top-right-radius: 20px; }
+        .scan-frame-inner::before { bottom: -1px; left: -1px; border-bottom-width: 3px; border-left-width: 3px; border-bottom-left-radius: 20px; }
+        .scan-frame-inner::after { bottom: -1px; right: -1px; border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 20px; }
+
+        .scan-text {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            background: rgba(0,0,0,0.4);
+            padding: 8px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
         }
 
-        .logo-main {
-            font-size: 32px;
-            font-weight: 900;
-            letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #fff 0%, #a5d8ff 100%);
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 15px rgba(31, 67, 136, 0.7));
-            line-height: 1.1;
-            animation: glow 2s ease-in-out infinite alternate;
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); border-color: rgba(255, 255, 255, 0.3); }
+            50% { transform: scale(1.02); border-color: rgba(255, 255, 255, 0.6); }
         }
 
-        @keyframes glow {
-            from { filter: drop-shadow(0 0 15px rgba(31, 67, 136, 0.7)); }
-            to { filter: drop-shadow(0 0 25px rgba(31, 67, 136, 1)); }
-        }
-
-        .logo-sub {
-            display: flex;
-            gap: 8px;
-            font-size: 9px;
-            text-transform: uppercase;
-            font-weight: 800;
-            letter-spacing: 1.5px;
-            margin-top: 4px;
-            color: rgba(255, 255, 255, 0.95);
-            justify-content: center;
-        }
-
-        /* Stats Panel - NEW */
-        #stats-panel {
-            position: absolute;
-            top: 25px;
-            left: 25px;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 15px;
-            padding: 12px 16px;
-            opacity: 0;
-            transform: translateY(-20px);
-            transition: all 0.5s;
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.8);
-            min-width: 120px;
-        }
-
-        #stats-panel.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            margin: 4px 0;
-            gap: 10px;
-        }
-
-        .stat-label {
-            color: rgba(255, 255, 255, 0.6);
-            text-transform: uppercase;
-            font-size: 10px;
-            font-weight: 600;
-        }
-
-        .stat-value {
-            color: #e91e63;
-            font-weight: 700;
-        }
-
-        /* Controls - Enhanced */
-        #controls {
-            position: absolute;
-            bottom: 40px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            gap: 50px;
-            pointer-events: auto;
-            padding: 0 20px;
-            box-sizing: border-box;
-        }
-
-        .btn-tech {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(15px);
-            color: #fff;
-            font-size: 24px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        /* --- BOTTOM CONTROLS --- */
+        .camera-footer {
+            padding: 30px 0 50px 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.4);
             position: relative;
-            overflow: hidden;
+            pointer-events: auto;
+            min-height: 120px;
         }
 
-        .btn-tech::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent);
-            transform: scale(0);
-            transition: transform 0.5s;
+        /* Shutter Button - Pro Style */
+        #shutter-btn {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            border: 4px solid rgba(255, 255, 255, 0.9);
+            background: transparent;
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.1s, opacity 0.3s;
+            opacity: 0; /* Hidden by default until tracked */
+            pointer-events: none;
         }
 
-        .btn-tech:active::before {
+        #shutter-btn.visible {
+            opacity: 1;
+            pointer-events: auto;
             transform: scale(1);
         }
 
-        .btn-tech:active {
-            transform: scale(0.9);
-            background: rgba(233, 30, 99, 0.4);
-            border-color: #e91e63;
+        #shutter-btn::after {
+            content: '';
+            width: 58px;
+            height: 58px;
+            background-color: white;
+            border-radius: 50%;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        #btn-capture {
-            width: 72px;
-            height: 72px;
-            background: linear-gradient(135deg, rgba(233, 30, 99, 0.9), rgba(194, 24, 91, 0.9));
-            border: 3px solid rgba(255, 255, 255, 0.4);
-            font-size: 36px;
-            box-shadow: 0 8px 35px rgba(233, 30, 99, 0.5);
+        #shutter-btn:active::after {
+            transform: scale(0.85);
+            background-color: #e91e63;
         }
 
-        #btn-capture:active {
-            box-shadow: 0 4px 20px rgba(233, 30, 99, 0.7);
-        }
-
-        /* Settings Button - NEW */
-        #btn-settings {
+        /* Stats (FPS) - Minimal */
+        #fps-display {
             position: absolute;
-            bottom: 120px;
-            right: 25px;
-            width: 50px;
-            height: 50px;
-            pointer-events: auto;
+            left: 24px;
+            bottom: 60px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            font-family: monospace;
         }
 
-        /* Flash Effect */
-        #flash {
+        /* --- REVIEW OVERLAY (NEW) --- */
+        #review-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.8));
+            background: #000;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
             opacity: 0;
             pointer-events: none;
-            z-index: 999;
-            transition: opacity 0.15s;
+            transition: opacity 0.3s ease;
         }
 
-        /* Toast Notification - NEW */
-        #toast {
-            position: fixed;
-            bottom: 140px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(15px);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            font-size: 13px;
-            font-weight: 600;
-            opacity: 0;
-            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            z-index: 1000;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        #toast.show {
+        #review-overlay.active {
             opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        /* Settings Modal - NEW */
-        #settings-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            z-index: 100;
-            display: none;
-            justify-content: center;
-            align-items: center;
             pointer-events: auto;
         }
 
-        #settings-modal.show {
+        .review-image-container {
+            flex: 1;
             display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: #111;
         }
 
-        .settings-content {
-            background: rgba(20, 20, 20, 0.95);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 350px;
-            width: 90%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        #preview-img {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
         }
 
-        .settings-title {
-            font-size: 20px;
-            font-weight: 800;
-            color: #e91e63;
-            margin-bottom: 20px;
+        .review-actions {
+            padding: 24px 30px 40px 30px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            background: #000;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 16px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 14px;
             text-align: center;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            text-transform: uppercase;
             letter-spacing: 1px;
         }
 
-        .setting-row {
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .btn-save {
+            background: #e91e63;
+            color: white;
+            box-shadow: 0 4px 15px rgba(233, 30, 99, 0.4);
+        }
+
+        .action-btn:active { opacity: 0.8; }
+
+        /* --- LOADING SCREEN --- */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s;
+        }
+
+        .loader-ring {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(233, 30, 99, 0.3);
+            border-top-color: #e91e63;
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+            margin-bottom: 15px;
+        }
+
+        .loader-text {
+            color: #666;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- FLASH EFFECT --- */
+        #flash {
+            position: fixed;
+            inset: 0;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 200;
+            transition: opacity 0.1s;
+        }
+
+        /* --- SETTINGS MODAL --- */
+        #settings-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(20px);
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            padding: 24px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 50;
+        }
+        
+        #settings-panel.open { transform: translateY(0); }
+
+        .settings-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 24px;
         }
 
-        .setting-row:last-child {
-            border-bottom: none;
-        }
-
-        .setting-label {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .setting-value {
-            color: #e91e63;
-            font-weight: 700;
-            font-size: 14px;
-            padding: 6px 12px;
-            background: rgba(233, 30, 99, 0.2);
-            border-radius: 15px;
-            min-width: 60px;
-            text-align: center;
-        }
-
-        .setting-slider {
+        .settings-title { font-size: 16px; font-weight: 700; color: #fff; }
+        
+        .slider-group { margin-bottom: 20px; }
+        .slider-label { display: flex; justify-content: space-between; color: #aaa; font-size: 12px; margin-bottom: 8px; }
+        .slider-input {
             width: 100%;
-            margin-top: 8px;
+            -webkit-appearance: none;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            outline: none;
         }
-
-        .close-settings {
-            margin-top: 20px;
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, rgba(233, 30, 99, 0.8), rgba(194, 24, 91, 0.8));
-            border: none;
-            border-radius: 15px;
-            color: white;
-            font-weight: 700;
-            font-size: 14px;
+        .slider-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #e91e63;
+            border-radius: 50%;
             cursor: pointer;
-            transition: all 0.3s;
         }
 
-        .close-settings:active {
-            transform: scale(0.95);
-        }
-
-        /* Responsive */
-        @media (max-width: 480px) {
-            #controls { gap: 30px; }
-            .btn-tech { width: 56px; height: 56px; font-size: 20px; }
-            #btn-capture { width: 64px; height: 64px; font-size: 32px; }
-            #guide-box { font-size: 13px; padding: 12px 24px; }
-            .logo-main { font-size: 28px; }
-        }
     </style>
 
     <script type="importmap">
@@ -487,106 +400,98 @@
 </head>
 
 <body>
+
     <!-- Loading Screen -->
     <div id="loading-screen">
-        <div class="tech-spinner"></div>
-        <div class="loading-text">Initializing AR Engine...</div>
-        <div class="loading-progress">
-            <div class="loading-progress-bar" id="progress-bar"></div>
-        </div>
+        <div class="loader-ring"></div>
+        <div class="loader-text">ĐANG TẢI DỮ LIỆU... <span id="progress-text">0%</span></div>
     </div>
 
-    <!-- Main Container -->
+    <!-- Main AR Container -->
     <div id="container" style="width:100vw; height:100vh; overflow:hidden;"></div>
 
-    <!-- UI Layer -->
+    <!-- UI Overlay -->
     <div id="ui-layer">
-        <!-- Stats Panel -->
-        <div id="stats-panel">
-            <div class="stat-item">
-                <span class="stat-label">FPS</span>
-                <span class="stat-value" id="fps-value">60</span>
+        
+        <!-- Top Bar -->
+        <div class="camera-header">
+            <div class="brand-pill">
+                <div class="brand-logo">JCB</div>
+                <div class="brand-tagline">Sakura AR</div>
             </div>
-            <div class="stat-item">
-                <span class="stat-label">Particles</span>
-                <span class="stat-value" id="particle-value">1500</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Tracking</span>
-                <span class="stat-value" id="tracking-status">⚪</span>
-            </div>
-        </div>
-
-        <!-- Guide Box -->
-        <div id="guide-box">
-            <span class="guide-icon">💠</span>
-            <span>QUÉT THẺ ĐỂ TRẢI NGHIỆM</span>
-        </div>
-
-        <!-- JCB Logo -->
-        <div id="jcb-card-container">
-            <div class="jcb-glass">
-                <div class="logo-main">JCB</div>
-                <div class="logo-sub">
-                    <span>Uniquely</span>
-                    <span>Yours</span>
+            
+            <div class="top-controls">
+                <div class="icon-btn" id="btn-settings" title="Cài đặt">
+                    <!-- Settings Icon -->
+                    <svg class="icon-svg" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                </div>
+                <div class="icon-btn" id="btn-switch" title="Đổi Camera">
+                    <!-- Rotate Camera Icon -->
+                    <svg class="icon-svg" viewBox="0 0 24 24"><path d="M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 11.5V13H9v2.5L5.5 12 9 8.5V11h6V8.5l3.5 3.5-3.5 3.5z"/></svg>
                 </div>
             </div>
         </div>
 
-        <!-- Controls -->
-        <div id="controls">
-            <button id="btn-switch" class="btn-tech" title="Switch Camera">↻</button>
-            <button id="btn-capture" class="btn-tech" title="Take Photo">📷</button>
-            <button id="btn-settings" class="btn-tech" title="Settings">⚙️</button>
+        <!-- Scanning Guide (Visible initially, hidden on track) -->
+        <div id="scan-guide">
+            <div class="scan-frame">
+                <div class="scan-frame-inner"></div>
+            </div>
+            <div class="scan-text">Di chuyển camera vào backdrop</div>
+        </div>
+
+        <!-- Footer Controls -->
+        <div class="camera-footer">
+            <div id="fps-display">FPS: --</div>
+            <!-- Shutter Button (Hidden initially) -->
+            <div id="shutter-btn"></div>
+        </div>
+
+    </div>
+
+    <!-- Review Overlay -->
+    <div id="review-overlay">
+        <div class="review-image-container">
+            <img id="preview-img" src="" alt="Captured Photo">
+        </div>
+        <div class="review-actions">
+            <div class="action-btn btn-cancel" id="btn-retake">Chụp lại</div>
+            <div class="action-btn btn-save" id="btn-save">Lưu ảnh</div>
         </div>
     </div>
 
-    <!-- Flash Effect -->
+    <!-- Settings Panel -->
+    <div id="settings-panel">
+        <div class="settings-header">
+            <div class="settings-title">CÀI ĐẶT HIỆU ỨNG</div>
+            <div style="color:#e91e63; font-weight:bold; cursor:pointer;" id="close-settings">ĐÓNG</div>
+        </div>
+        
+        <div class="slider-group">
+            <div class="slider-label">
+                <span>Số lượng hoa</span>
+                <span id="particle-val">1500</span>
+            </div>
+            <input type="range" class="slider-input" id="particle-slider" min="500" max="3000" step="100" value="1500">
+        </div>
+
+        <div class="slider-group">
+            <div class="slider-label">
+                <span>Sức gió</span>
+                <span id="wind-val">100%</span>
+            </div>
+            <input type="range" class="slider-input" id="wind-slider" min="0" max="200" step="10" value="100">
+        </div>
+    </div>
+
+    <!-- Flash Animation -->
     <div id="flash"></div>
-
-    <!-- Toast Notification -->
-    <div id="toast"></div>
-
-    <!-- Settings Modal -->
-    <div id="settings-modal">
-        <div class="settings-content">
-            <div class="settings-title">⚙️ SETTINGS</div>
-            
-            <div class="setting-row">
-                <div class="setting-label">Particle Count</div>
-                <div class="setting-value" id="particle-count-display">1500</div>
-            </div>
-            <input type="range" class="setting-slider" id="particle-slider" min="500" max="3000" step="100" value="1500">
-            
-            <div class="setting-row">
-                <div class="setting-label">Wind Strength</div>
-                <div class="setting-value" id="wind-display">100%</div>
-            </div>
-            <input type="range" class="setting-slider" id="wind-slider" min="0" max="200" step="10" value="100">
-            
-            <div class="setting-row">
-                <div class="setting-label">Show Stats</div>
-                <div class="setting-value" id="stats-toggle">ON</div>
-            </div>
-            
-            <button class="close-settings">CLOSE</button>
-        </div>
-    </div>
 
     <script type="module">
         import * as THREE from 'three';
         import { MindARThree } from 'mindar-image-three';
 
-        // ============ CONFIGURATION ============
-        const CONFIG = {
-            MIND_FILE_PATH: 'targets.mind',
-            PARTICLE_COUNT: 1500,
-            WIND_MULTIPLIER: 1.0,
-            SHOW_STATS: true
-        };
-
-        // ============ STATE MANAGEMENT ============
+        // ============ CORE STATE ============
         const STATE = {
             mindarThree: null,
             renderer: null,
@@ -599,61 +504,42 @@
             clock: new THREE.Clock(),
             uMouse: new THREE.Vector3(0, 0, 0),
             uWindStrength: 0.0,
-            fps: 60,
             frameCount: 0,
-            lastTime: performance.now()
+            lastTime: performance.now(),
+            capturedImageBlob: null
+        };
+
+        const CONFIG = {
+            MIND_FILE_PATH: 'targets.mind', // Ensure this file exists
+            PARTICLE_COUNT: 1500,
+            WIND_MULTIPLIER: 1.0
         };
 
         // ============ UI ELEMENTS ============
         const UI = {
             loader: document.getElementById('loading-screen'),
-            progressBar: document.getElementById('progress-bar'),
-            guide: document.getElementById('guide-box'),
-            jcb: document.getElementById('jcb-card-container'),
-            statsPanel: document.getElementById('stats-panel'),
-            fpsValue: document.getElementById('fps-value'),
-            particleValue: document.getElementById('particle-value'),
-            trackingStatus: document.getElementById('tracking-status'),
-            toast: document.getElementById('toast'),
-            settingsModal: document.getElementById('settings-modal'),
-            btnCapture: document.getElementById('btn-capture'),
-            btnSwitch: document.getElementById('btn-switch'),
+            progressText: document.getElementById('progress-text'),
+            scanGuide: document.getElementById('scan-guide'),
+            shutterBtn: document.getElementById('shutter-btn'),
+            fps: document.getElementById('fps-display'),
+            reviewOverlay: document.getElementById('review-overlay'),
+            previewImg: document.getElementById('preview-img'),
+            btnRetake: document.getElementById('btn-retake'),
+            btnSave: document.getElementById('btn-save'),
+            settingsPanel: document.getElementById('settings-panel'),
             btnSettings: document.getElementById('btn-settings'),
+            closeSettings: document.getElementById('close-settings'),
             flash: document.getElementById('flash')
         };
 
-        // ============ UTILITY FUNCTIONS ============
-        function showToast(message, duration = 2000) {
-            UI.toast.textContent = message;
-            UI.toast.classList.add('show');
-            setTimeout(() => UI.toast.classList.remove('show'), duration);
-        }
-
-        function updateProgress(percent) {
-            UI.progressBar.style.width = `${percent}%`;
-        }
-
-        function updateFPS() {
-            STATE.frameCount++;
-            const now = performance.now();
-            if (now >= STATE.lastTime + 1000) {
-                STATE.fps = Math.round((STATE.frameCount * 1000) / (now - STATE.lastTime));
-                UI.fpsValue.textContent = STATE.fps;
-                STATE.frameCount = 0;
-                STATE.lastTime = now;
-            }
-        }
-
-        // ============ SHADER CODE ============
+        // ============ THREE JS & SHADERS (UNCHANGED LOGIC) ============
         const vertexShader = `
             uniform float uTime;
             uniform vec3 uMouse;
             uniform float uWindStrength;
             uniform float uWindMultiplier;
-            
             attribute vec3 aRandom;
             attribute vec3 aOffset;
-
             varying vec2 vUv;
             varying float vAlpha;
             varying vec3 vNormal;
@@ -675,7 +561,6 @@
                 vUv = uv;
                 vNormal = normal;
                 vec3 pos = aOffset;
-
                 float speed = aRandom.x * 0.3 + 0.1;
                 float fallHeight = 8.0;
                 float yOffset = mod(uTime * speed, fallHeight);
@@ -684,7 +569,6 @@
 
                 float windX = sin(uTime * 0.5 + aRandom.y * 5.0) * 0.3 * uWindMultiplier;
                 float windZ = cos(uTime * 0.3 + aRandom.y * 3.0) * 0.2 * uWindMultiplier;
-                
                 float dist = distance(pos.xy, uMouse.xy * 5.0);
                 float repulsion = smoothstep(2.0, 0.0, dist) * uWindStrength * uWindMultiplier;
                 
@@ -694,7 +578,6 @@
                 float rotAngle = uTime * (aRandom.z * 2.0) + aRandom.y;
                 vec3 rotAxis = normalize(vec3(sin(aRandom.y), cos(aRandom.x), sin(aRandom.z)));
                 mat4 rotMat = rotationMatrix(rotAxis, rotAngle);
-
                 vec4 localPos = rotMat * vec4(position, 1.0);
                 vec4 worldPos = vec4(localPos.xyz + pos, 1.0);
                 vec4 mvPosition = viewMatrix * modelMatrix * worldPos;
@@ -714,32 +597,20 @@
             void main() {
                 vec4 texColor = texture2D(uTexture, vUv);
                 if (texColor.a < 0.1) discard;
-                
                 vec3 lightDir = normalize(vec3(0.5, 1.0, 0.5));
                 float diff = max(dot(vNormal, lightDir), 0.0);
                 vec3 lighting = vec3(0.6) + (vec3(0.4) * diff);
                 vec3 finalColor = uColor * texColor.rgb * lighting * 1.2;
-                
                 gl_FragColor = vec4(finalColor, texColor.a * vAlpha);
             }
         `;
 
-        // ============ PARTICLE SYSTEM ============
-        function createParticleSystem() {
-            const petalGeo = new THREE.PlaneGeometry(0.06, 0.09, 2, 2);
-            const posAttr = petalGeo.attributes.position;
-            
-            for (let i = 0; i < posAttr.count; i++) {
-                const x = posAttr.getX(i);
-                posAttr.setZ(i, Math.abs(x) * 0.5);
-            }
-            petalGeo.computeVertexNormals();
-
+        function createSakuraTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 128;
-            canvas.height = 128;
+            canvas.width = 128; canvas.height = 128;
             const ctx = canvas.getContext('2d');
-
+            
+            // Draw Petal Shape
             ctx.beginPath();
             ctx.moveTo(64, 120);
             ctx.bezierCurveTo(20, 100, 0, 60, 20, 30);
@@ -749,6 +620,7 @@
             ctx.fillStyle = "#ffffff";
             ctx.fill();
 
+            // Gradient
             ctx.globalCompositeOperation = 'source-in';
             const grd = ctx.createRadialGradient(64, 40, 5, 64, 80, 80);
             grd.addColorStop(0, "rgba(255, 240, 245, 1)");
@@ -757,23 +629,25 @@
             ctx.fillStyle = grd;
             ctx.fill();
 
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.strokeStyle = "rgba(233, 30, 99, 0.1)";
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(64, 30);
-            ctx.lineTo(64, 100);
-            ctx.stroke();
+            return new THREE.CanvasTexture(canvas);
+        }
 
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.encoding = THREE.sRGBEncoding;
+        function createParticles() {
+            const geometry = new THREE.PlaneGeometry(0.06, 0.09, 2, 2);
+            // Bend the geometry slightly
+            const posAttr = geometry.attributes.position;
+            for(let i=0; i<posAttr.count; i++){
+                const x = posAttr.getX(i);
+                posAttr.setZ(i, Math.abs(x) * 0.5);
+            }
+            geometry.computeVertexNormals();
 
             const material = new THREE.ShaderMaterial({
                 uniforms: {
                     uTime: { value: 0 },
-                    uTexture: { value: texture },
+                    uTexture: { value: createSakuraTexture() },
                     uColor: { value: new THREE.Color(0xffffff) },
-                    uMouse: { value: new THREE.Vector3(0, 0, 0) },
+                    uMouse: { value: new THREE.Vector3(0,0,0) },
                     uWindStrength: { value: 0.0 },
                     uWindMultiplier: { value: CONFIG.WIND_MULTIPLIER }
                 },
@@ -785,162 +659,209 @@
                 blending: THREE.NormalBlending
             });
 
-            STATE.sakuraMesh = new THREE.InstancedMesh(petalGeo, material, CONFIG.PARTICLE_COUNT);
-
+            STATE.sakuraMesh = new THREE.InstancedMesh(geometry, material, CONFIG.PARTICLE_COUNT);
+            
             const dummy = new THREE.Object3D();
             const aRandom = [];
             const aOffset = [];
 
             for (let i = 0; i < CONFIG.PARTICLE_COUNT; i++) {
-                dummy.position.set(0, 0, 0);
+                dummy.position.set(0,0,0);
                 dummy.updateMatrix();
                 STATE.sakuraMesh.setMatrixAt(i, dummy.matrix);
                 aRandom.push(Math.random(), Math.random() * Math.PI * 2, Math.random());
-                aOffset.push(
-                    (Math.random() - 0.5) * 5.0,
-                    (Math.random() * 4.0) + 1.0,
-                    (Math.random() - 0.5) * 4.0
-                );
+                aOffset.push((Math.random()-0.5)*5.0, (Math.random()*4.0)+1.0, (Math.random()-0.5)*4.0);
             }
 
-            petalGeo.setAttribute('aRandom', new THREE.InstancedBufferAttribute(new Float32Array(aRandom), 3));
-            petalGeo.setAttribute('aOffset', new THREE.InstancedBufferAttribute(new Float32Array(aOffset), 3));
-
-            STATE.sakuraMesh.instanceMatrix.needsUpdate = true;
+            geometry.setAttribute('aRandom', new THREE.InstancedBufferAttribute(new Float32Array(aRandom), 3));
+            geometry.setAttribute('aOffset', new THREE.InstancedBufferAttribute(new Float32Array(aOffset), 3));
             STATE.sakuraMesh.frustumCulled = false;
-
+            
             STATE.anchor.group.add(STATE.sakuraMesh);
         }
 
-        // ============ SETUP EVENT HANDLERS ============
-        function setupEventHandlers() {
+        // ============ APP LOGIC ============
+
+        async function init() {
+            try {
+                UI.progressText.textContent = "10%";
+                STATE.mindarThree = new MindARThree({
+                    container: document.querySelector('#container'),
+                    imageTargetSrc: CONFIG.MIND_FILE_PATH,
+                    filterMinCF: 0.0001, 
+                    filterBeta: 0.001,
+                    uiLoading: "no",
+                    uiScanning: "no" // We implement our own UI
+                });
+
+                const { renderer, scene, camera } = STATE.mindarThree;
+                STATE.renderer = renderer;
+                STATE.scene = scene;
+                STATE.camera = camera;
+
+                renderer.outputEncoding = THREE.sRGBEncoding;
+                renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+                // Lighting
+                const light = new THREE.DirectionalLight(0xffffff, 1.5);
+                light.position.set(5, 10, 7);
+                scene.add(light);
+                scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.0));
+
+                UI.progressText.textContent = "50%";
+                
+                // Anchors
+                STATE.anchor = STATE.mindarThree.addAnchor(0);
+                
+                // Occluder (To hide particles behind card)
+                const occluderMat = new THREE.MeshBasicMaterial({ colorWrite: false });
+                const occluder = new THREE.Mesh(new THREE.PlaneGeometry(1, 1.5), occluderMat);
+                STATE.anchor.group.add(occluder);
+
+                createParticles();
+                
+                // Listeners
+                setupTrackingEvents();
+                setupUIEvents();
+                setupInteraction();
+
+                UI.progressText.textContent = "90%";
+                await STATE.mindarThree.start();
+                
+                // Finish Loading
+                UI.loader.style.opacity = 0;
+                setTimeout(() => UI.loader.style.display = 'none', 500);
+
+                // Game Loop
+                renderer.setAnimationLoop(() => {
+                    const dt = STATE.clock.getDelta();
+                    if (STATE.sakuraMesh && STATE.sakuraMesh.material.uniforms) {
+                        STATE.sakuraMesh.material.uniforms.uTime.value += dt;
+                        // Smooth wind decay
+                        STATE.sakuraMesh.material.uniforms.uWindStrength.value = 
+                            THREE.MathUtils.lerp(STATE.sakuraMesh.material.uniforms.uWindStrength.value, STATE.uWindStrength, 0.1);
+                        STATE.uWindStrength *= 0.9;
+                    }
+                    renderer.render(scene, camera);
+                    updateFPS();
+                });
+
+            } catch (err) {
+                alert("Lỗi khởi tạo AR: " + err.message);
+                console.error(err);
+            }
+        }
+
+        function setupTrackingEvents() {
             STATE.anchor.onTargetFound = () => {
-                console.log("Target Locked");
                 STATE.isTracking = true;
-                UI.guide.style.opacity = 0;
-                UI.jcb.classList.add('visible');
-                UI.trackingStatus.textContent = '🟢';
-                if (CONFIG.SHOW_STATS) {
-                    UI.statsPanel.classList.add('visible');
-                }
-                STATE.anchor.group.visible = true;
-                showToast('✅ Tracking Active!');
+                STATE.anchor.group.visible = true; // Show 3D objects
+                // UI Changes
+                UI.scanGuide.style.opacity = 0; // Hide guide
+                UI.shutterBtn.classList.add('visible'); // Show capture button
             };
 
             STATE.anchor.onTargetLost = () => {
-                console.log("Target Lost");
                 STATE.isTracking = false;
-                UI.guide.style.opacity = 1;
-                UI.jcb.classList.remove('visible');
-                UI.trackingStatus.textContent = '⚪';
-                showToast('❌ Tracking Lost');
+                STATE.anchor.group.visible = false;
+                // UI Changes
+                UI.scanGuide.style.opacity = 1; // Show guide
+                UI.shutterBtn.classList.remove('visible'); // Hide capture button
             };
+        }
 
-            UI.btnCapture.addEventListener('click', takeScreenshot);
-            UI.btnSwitch.addEventListener('click', switchCamera);
+        function setupUIEvents() {
+            // Switch Camera
+            document.getElementById('btn-switch').addEventListener('click', () => {
+                STATE.mindarThree.switchCamera();
+                STATE.isFrontCamera = !STATE.isFrontCamera;
+                const video = document.querySelector('video');
+                if(video) video.style.transform = STATE.isFrontCamera ? 'scaleX(-1)' : 'scaleX(1)';
+            });
+
+            // Capture
+            UI.shutterBtn.addEventListener('click', captureScene);
+
+            // Review: Retake
+            UI.btnRetake.addEventListener('click', () => {
+                UI.reviewOverlay.classList.remove('active');
+                STATE.capturedImageBlob = null;
+            });
+
+            // Review: Save
+            UI.btnSave.addEventListener('click', () => {
+                if (STATE.capturedImageBlob) {
+                    const link = document.createElement('a');
+                    link.download = `JCB-Sakura-${Date.now()}.png`;
+                    link.href = STATE.capturedImageBlob;
+                    link.click();
+                    UI.btnSave.textContent = "ĐÃ LƯU!";
+                    setTimeout(() => {
+                         UI.btnSave.textContent = "LƯU ẢNH";
+                         UI.reviewOverlay.classList.remove('active');
+                    }, 1000);
+                }
+            });
+
+            // Settings
             UI.btnSettings.addEventListener('click', () => {
-                UI.settingsModal.classList.add('show');
+                UI.settingsPanel.classList.add('open');
+            });
+            UI.closeSettings.addEventListener('click', () => {
+                UI.settingsPanel.classList.remove('open');
             });
 
-            document.querySelector('.close-settings').addEventListener('click', () => {
-                UI.settingsModal.classList.remove('show');
-            });
-
+            // Sliders
             document.getElementById('particle-slider').addEventListener('input', (e) => {
+                document.getElementById('particle-val').textContent = e.target.value;
                 CONFIG.PARTICLE_COUNT = parseInt(e.target.value);
-                document.getElementById('particle-count-display').textContent = CONFIG.PARTICLE_COUNT;
-                UI.particleValue.textContent = CONFIG.PARTICLE_COUNT;
-                showToast(`Particles: ${CONFIG.PARTICLE_COUNT}`);
+                // Note: Changing count at runtime requires geometry recreation, 
+                // for simplicity in this demo we assume only opacity/speed changes or simple reload.
+                // A full implementation would dispose and recreate mesh.
             });
 
             document.getElementById('wind-slider').addEventListener('input', (e) => {
-                CONFIG.WIND_MULTIPLIER = parseFloat(e.target.value) / 100;
-                document.getElementById('wind-display').textContent = e.target.value + '%';
-                if (STATE.sakuraMesh && STATE.sakuraMesh.material.uniforms) {
-                    STATE.sakuraMesh.material.uniforms.uWindMultiplier.value = CONFIG.WIND_MULTIPLIER;
-                }
-            });
-
-            document.getElementById('stats-toggle').addEventListener('click', (e) => {
-                CONFIG.SHOW_STATS = !CONFIG.SHOW_STATS;
-                e.target.textContent = CONFIG.SHOW_STATS ? 'ON' : 'OFF';
-                if (CONFIG.SHOW_STATS && STATE.isTracking) {
-                    UI.statsPanel.classList.add('visible');
-                } else {
-                    UI.statsPanel.classList.remove('visible');
-                }
+                const val = e.target.value;
+                document.getElementById('wind-val').textContent = val + '%';
+                CONFIG.WIND_MULTIPLIER = val / 100;
+                if(STATE.sakuraMesh) STATE.sakuraMesh.material.uniforms.uWindMultiplier.value = CONFIG.WIND_MULTIPLIER;
             });
         }
 
-        // ============ INTERACTION SETUP ============
         function setupInteraction() {
-            window.addEventListener('mousemove', (e) => {
-                const x = (e.clientX / window.innerWidth) * 2 - 1;
-                const y = -(e.clientY / window.innerHeight) * 2 + 1;
-                if (STATE.sakuraMesh && STATE.sakuraMesh.material.uniforms) {
-                    STATE.sakuraMesh.material.uniforms.uMouse.value.set(x, y, 0);
-                    STATE.uWindStrength = 1.0;
-                }
-            });
+            const handleMove = (x, y) => {
+                if(!STATE.sakuraMesh) return;
+                // Normalize -1 to 1
+                const nx = (x / window.innerWidth) * 2 - 1;
+                const ny = -(y / window.innerHeight) * 2 + 1;
+                STATE.sakuraMesh.material.uniforms.uMouse.value.set(nx, ny, 0);
+                STATE.uWindStrength = 2.0;
+            };
 
-            window.addEventListener('touchmove', (e) => {
-                if (e.touches.length > 0) {
-                    const x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
-                    const y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
-                    if (STATE.sakuraMesh && STATE.sakuraMesh.material.uniforms) {
-                        STATE.sakuraMesh.material.uniforms.uMouse.value.set(x, y, 0);
-                        STATE.uWindStrength = 2.0;
-                    }
-                }
-            });
+            window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+            window.addEventListener('touchmove', e => handleMove(e.touches[0].clientX, e.touches[0].clientY));
         }
 
-        // ============ CAMERA FUNCTIONS ============
-        function switchCamera() {
-            STATE.isTracking = false;
-            UI.guide.style.opacity = 1;
-            UI.jcb.classList.remove('visible');
-            UI.trackingStatus.textContent = '⚪';
-
-            if (STATE.anchor && STATE.anchor.group) {
-                STATE.anchor.group.visible = false;
-            }
-
-            STATE.mindarThree.switchCamera();
-            STATE.isFrontCamera = !STATE.isFrontCamera;
-            flipVideo();
-            showToast(`📷 Camera: ${STATE.isFrontCamera ? 'Front' : 'Back'}`);
-        }
-
-        function flipVideo() {
-            const video = document.querySelector('video');
-            if (video) {
-                video.style.transform = STATE.isFrontCamera ? 'scaleX(-1)' : 'scaleX(1)';
-            }
-        }
-
-        // ============ SCREENSHOT FUNCTION ============
-        function takeScreenshot() {
+        function captureScene() {
+            // Flash Effect
             UI.flash.style.opacity = 1;
-            setTimeout(() => UI.flash.style.opacity = 0, 150);
+            setTimeout(() => UI.flash.style.opacity = 0, 100);
 
+            // Render render loop scene
+            STATE.renderer.render(STATE.scene, STATE.camera);
+            
             const video = document.querySelector('video');
             const canvas = document.querySelector('canvas');
-            if (!video || !canvas) {
-                showToast('❌ Error: No video/canvas found');
-                return;
-            }
-
-            const w = video.videoWidth;
+            
+            const w = video.videoWidth; 
             const h = video.videoHeight;
             const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = w;
+            tempCanvas.width = w; 
             tempCanvas.height = h;
             const ctx = tempCanvas.getContext('2d');
 
-            STATE.renderer.render(STATE.scene, STATE.camera);
-
-            if (STATE.isFrontCamera) {
+            // Draw Video
+            if(STATE.isFrontCamera) {
                 ctx.save();
                 ctx.scale(-1, 1);
                 ctx.drawImage(video, -w, 0, w, h);
@@ -949,152 +870,36 @@
                 ctx.drawImage(video, 0, 0, w, h);
             }
 
+            // Draw WebGL Content
             ctx.drawImage(canvas, 0, 0, w, h);
 
-            if (STATE.isTracking) {
-                const cardW = 160;
-                const cardH = 60;
-                const cardX = w - cardW - 40;
-                const cardY = 40;
+            // Add Branding Watermark (Optional logic preserved)
+            ctx.shadowColor="rgba(0,0,0,0.5)"; ctx.shadowBlur=4;
+            ctx.fillStyle = "white";
+            ctx.font = "bold 24px Montserrat";
+            ctx.textAlign = "right";
+            ctx.fillText("JCB Sakura AR", w - 30, h - 40);
 
-                ctx.save();
-                ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
-                ctx.shadowBlur = 10;
-                ctx.shadowOffsetY = 4;
-
-                ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-                ctx.beginPath();
-                ctx.roundRect(cardX, cardY, cardW, cardH, 12);
-                ctx.fill();
-
-                ctx.shadowColor = "transparent";
-                ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-                ctx.lineWidth = 1;
-                ctx.stroke();
-
-                ctx.textAlign = "center";
-                ctx.fillStyle = "#1f4388";
-                ctx.font = "900 32px Nunito";
-                ctx.fillText("JCB", cardX + cardW / 2, cardY + 38);
-
-                ctx.font = "700 8px Nunito";
-                ctx.fillStyle = "#e60012";
-                ctx.fillText("UNIQUELY", cardX + cardW / 2 - 20, cardY + 50);
-                ctx.fillStyle = "#007b3e";
-                ctx.fillText("YOURS", cardX + cardW / 2 + 25, cardY + 50);
-
-                ctx.restore();
-            }
-
-            const link = document.createElement('a');
-            link.download = `JCB-Sakura-${Date.now()}.png`;
-            link.href = tempCanvas.toDataURL('image/png', 1.0);
-            link.click();
-            showToast('✅ Photo Saved!');
+            // Show Review
+            STATE.capturedImageBlob = tempCanvas.toDataURL('image/png');
+            UI.previewImg.src = STATE.capturedImageBlob;
+            UI.reviewOverlay.classList.add('active');
         }
 
-        // ============ POLYFILL ============
-        if (!CanvasRenderingContext2D.prototype.roundRect) {
-            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
-                if (w < 2 * r) r = w / 2;
-                if (h < 2 * r) r = h / 2;
-                this.beginPath();
-                this.moveTo(x + r, y);
-                this.arcTo(x + w, y, x + w, y + h, r);
-                this.arcTo(x + w, y + h, x, y + h, r);
-                this.arcTo(x, y + h, x, y, r);
-                this.arcTo(x, y, x + w, y, r);
-                this.closePath();
-                return this;
-            };
-        }
-
-        // ============ INITIALIZATION ============
-        async function init() {
-            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-                alert("⚠️ Yêu cầu HTTPS cho WebXR!");
-                return;
-            }
-
-            try {
-                updateProgress(10);
-
-                STATE.mindarThree = new MindARThree({
-                    container: document.querySelector('#container'),
-                    imageTargetSrc: CONFIG.MIND_FILE_PATH,
-                    filterMinCF: 0.0001,
-                    filterBeta: 0.001,
-                    uiLoading: "no"
-                });
-
-                updateProgress(30);
-
-                const { renderer: r, scene: s, camera: c } = STATE.mindarThree;
-                STATE.renderer = r;
-                STATE.scene = s;
-                STATE.camera = c;
-
-                STATE.renderer.outputEncoding = THREE.sRGBEncoding;
-                STATE.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                STATE.renderer.toneMappingExposure = 1.0;
-
-                updateProgress(50);
-
-                const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
-                STATE.scene.add(hemiLight);
-                const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
-                dirLight.position.set(5, 10, 7);
-                STATE.scene.add(dirLight);
-
-                updateProgress(60);
-
-                STATE.anchor = STATE.mindarThree.addAnchor(0);
-
-                const occluderGeo = new THREE.PlaneGeometry(1, 1.5);
-                const occluderMat = new THREE.MeshBasicMaterial({ colorWrite: false });
-                const occluder = new THREE.Mesh(occluderGeo, occluderMat);
-                STATE.anchor.group.add(occluder);
-
-                updateProgress(70);
-
-                createParticleSystem();
-                
-                updateProgress(80);
-
-                setupEventHandlers();
-                setupInteraction();
-
-                updateProgress(90);
-
-                await STATE.mindarThree.start();
-
-                updateProgress(100);
-
-                setTimeout(() => {
-                    UI.loader.style.opacity = 0;
-                    setTimeout(() => UI.loader.style.display = 'none', 500);
-                }, 500);
-
-                STATE.renderer.setAnimationLoop(() => {
-                    const dt = STATE.clock.getDelta();
-                    if (STATE.sakuraMesh && STATE.sakuraMesh.material.uniforms) {
-                        STATE.sakuraMesh.material.uniforms.uTime.value += dt;
-                        STATE.sakuraMesh.material.uniforms.uWindStrength.value *= 0.95;
-                        STATE.sakuraMesh.material.uniforms.uWindStrength.value += STATE.uWindStrength * 0.1;
-                        STATE.uWindStrength *= 0.9;
-                    }
-                    STATE.renderer.render(STATE.scene, STATE.camera);
-                    updateFPS();
-                });
-
-            } catch (e) {
-                console.error(e);
-                alert("❌ Lỗi khởi tạo: " + e.message);
+        function updateFPS() {
+            STATE.frameCount++;
+            const now = performance.now();
+            if (now >= STATE.lastTime + 1000) {
+                const fps = Math.round((STATE.frameCount * 1000) / (now - STATE.lastTime));
+                UI.fps.textContent = `FPS: ${fps}`;
+                STATE.frameCount = 0;
+                STATE.lastTime = now;
             }
         }
 
+        // Start
         init();
+
     </script>
 </body>
-
 </html>
