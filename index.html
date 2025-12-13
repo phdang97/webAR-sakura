@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>PHĐ Sakura - Trải nghiệm AR</title>
+    <title>PHD Sakura - Trải nghiệm AR</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
@@ -81,12 +81,22 @@
             z-index: 20;
         }
 
-        /* Logo JCB Minimal */
+        /* Logo JCB Minimal - Chỉnh sửa hiển thị theo trạng thái tracking */
         .logo-minimal {
             display: flex;
             flex-direction: column;
             align-items: flex-start;
+            opacity: 0; /* Ẩn mặc định */
+            transform: translateY(-10px);
+            transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
         }
+        
+        /* Class hiển thị khi tracking active */
+        .logo-minimal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         .logo-text {
             font-weight: 800;
             font-size: 24px;
@@ -394,7 +404,7 @@
         <div class="top-bar">
             <!-- Logo Area -->
             <div class="logo-minimal">
-                <div class="logo-text">PHĐ</div>
+                <div class="logo-text">PHD</div>
                 <div class="logo-sub">AR EXPERIENCE</div>
             </div>
 
@@ -522,6 +532,7 @@
         const UI = {
             loader: document.getElementById('loading-screen'),
             guide: document.getElementById('guide-box'),
+            logo: document.querySelector('.logo-minimal'), // Reference to Logo
             statsPanel: document.getElementById('stats-panel'),
             fpsValue: document.getElementById('fps-value'),
             particleValue: document.getElementById('particle-value'),
@@ -733,6 +744,7 @@
                 // UI Logic: Show Capture, Hide Guide, Change Corner Color
                 UI.guide.style.opacity = 0;
                 UI.shutterContainer.classList.add('visible');
+                UI.logo.classList.add('visible'); // Show Logo
                 document.body.classList.add('tracking-active');
                 
                 STATE.anchor.group.visible = true;
@@ -744,6 +756,7 @@
                 // UI Logic: Show Guide, Hide Capture, Reset Corner Color
                 UI.guide.style.opacity = 1;
                 UI.shutterContainer.classList.remove('visible');
+                UI.logo.classList.remove('visible'); // Hide Logo
                 document.body.classList.remove('tracking-active');
                 
                 showToast('Mất tín hiệu', '⚠️');
@@ -756,6 +769,7 @@
                 STATE.isTracking = false;
                 UI.guide.style.opacity = 1;
                 UI.shutterContainer.classList.remove('visible');
+                UI.logo.classList.remove('visible'); // Hide Logo on Switch
                 
                 if (STATE.anchor && STATE.anchor.group) {
                     STATE.anchor.group.visible = false;
@@ -806,7 +820,7 @@
             UI.btnDownload.addEventListener('click', () => {
                 if(STATE.capturedDataUrl) {
                     const link = document.createElement('a');
-                    link.download = `JCB-Sakura-${Date.now()}.png`;
+                    link.download = `PHD-Sakura-${Date.now()}.png`;
                     link.href = STATE.capturedDataUrl;
                     link.click();
                     showToast('Đã lưu ảnh!', '✅');
@@ -895,7 +909,7 @@
                 ctx.fillStyle = "#1f4388";
                 // Ensure font available or fallback
                 ctx.font = "900 32px sans-serif"; 
-                ctx.fillText("JCB", cardX + cardW / 2, cardY + 38);
+                ctx.fillText("PHD", cardX + cardW / 2, cardY + 38);
 
                 ctx.font = "700 8px sans-serif";
                 ctx.fillStyle = "#e60012";
