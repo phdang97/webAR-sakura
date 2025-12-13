@@ -435,7 +435,7 @@
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
             </div>
-            <div class="guide-text">Quét thẻ để trải nghiệm</div>
+            <div class="guide-text">Quét backdrop để trải nghiệm</div>
         </div>
 
         <!-- Bottom Shutter -->
@@ -448,9 +448,54 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settings-modal">
+        <div class="settings-box">
+            <div class="settings-header">
+                <div class="settings-title">CÀI ĐẶT</div>
+                <div style="cursor:pointer;" class="close-settings">✕</div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-label">
+                    <span>Số lượng hoa</span>
+                    <span id="particle-count-display">1500</span>
+                </div>
+                <input type="range" id="particle-slider" min="500" max="3000" step="100" value="1500">
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-label">
+                    <span>Sức gió</span>
+                    <span id="wind-display">100%</span>
+                </div>
+                <input type="range" id="wind-slider" min="0" max="200" step="10" value="100">
+            </div>
+
+            <button class="btn-close-settings close-settings">ĐÓNG</button>
+        </div>
+    </div>
+
     <!-- FX & Toast -->
     <div id="flash"></div>
     <div id="toast"></div>
+
+    <!-- Review Modal -->
+    <div id="review-modal">
+        <div class="review-image-container">
+            <img id="preview-image" src="" alt="Captured">
+        </div>
+        <div class="review-controls">
+            <button class="btn-review btn-retry" id="btn-retake">
+                <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                <span>CHỤP LẠI</span>
+            </button>
+            <button class="btn-review btn-save" id="btn-download">
+                <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+                <span>LƯU ẢNH</span>
+            </button>
+        </div>
+    </div>
 
     <script type="module">
         import * as THREE from 'three';
@@ -509,9 +554,11 @@
 
         // ============ UTILITY FUNCTIONS ============
         function showToast(message, icon = 'ℹ️') {
-            UI.toast.innerHTML = `<span>${icon}</span> ${message}`;
-            UI.toast.classList.add('show');
-            setTimeout(() => UI.toast.classList.remove('show'), 2000);
+            if(UI.toast) {
+                UI.toast.innerHTML = `<span>${icon}</span> ${message}`;
+                UI.toast.classList.add('show');
+                setTimeout(() => UI.toast.classList.remove('show'), 2000);
+            }
         }
 
         function updateFPS() {
@@ -519,7 +566,7 @@
             const now = performance.now();
             if (now >= STATE.lastTime + 1000) {
                 STATE.fps = Math.round((STATE.frameCount * 1000) / (now - STATE.lastTime));
-                UI.fpsValue.textContent = STATE.fps;
+                if(UI.fpsValue) UI.fpsValue.textContent = STATE.fps;
                 STATE.frameCount = 0;
                 STATE.lastTime = now;
             }
@@ -762,9 +809,9 @@
         function setupEventHandlers() {
             STATE.anchor.onTargetFound = () => {
                 STATE.isTracking = true;
-                UI.guide.style.opacity = 0;
-                UI.shutterContainer.classList.add('visible');
-                UI.logo.classList.add('visible'); 
+                if(UI.guide) UI.guide.style.opacity = 0;
+                if(UI.shutterContainer) UI.shutterContainer.classList.add('visible');
+                if(UI.logo) UI.logo.classList.add('visible'); 
                 document.body.classList.add('tracking-active');
                 STATE.anchor.group.visible = true;
                 showToast('Đã nhận diện thẻ!', '🌸');
@@ -772,68 +819,88 @@
 
             STATE.anchor.onTargetLost = () => {
                 STATE.isTracking = false;
-                UI.guide.style.opacity = 1;
-                UI.shutterContainer.classList.remove('visible');
-                UI.logo.classList.remove('visible');
+                if(UI.guide) UI.guide.style.opacity = 1;
+                if(UI.shutterContainer) UI.shutterContainer.classList.remove('visible');
+                if(UI.logo) UI.logo.classList.remove('visible');
                 document.body.classList.remove('tracking-active');
                 showToast('Mất tín hiệu', '⚠️');
             };
 
-            UI.shutterBtn.addEventListener('click', prepareScreenshot);
+            if(UI.shutterBtn) UI.shutterBtn.addEventListener('click', prepareScreenshot);
             
-            UI.btnSwitch.addEventListener('click', () => {
-                STATE.isTracking = false;
-                UI.guide.style.opacity = 1;
-                UI.shutterContainer.classList.remove('visible');
-                UI.logo.classList.remove('visible'); 
-                if (STATE.anchor && STATE.anchor.group) {
-                    STATE.anchor.group.visible = false;
-                }
-                STATE.mindarThree.switchCamera();
-                STATE.isFrontCamera = !STATE.isFrontCamera;
-                const video = document.querySelector('video');
-                if (video) video.style.transform = STATE.isFrontCamera ? 'scaleX(-1)' : 'scaleX(1)';
-                showToast(STATE.isFrontCamera ? 'Camera Trước' : 'Camera Sau', '📷');
-            });
+            if(UI.btnSwitch) {
+                UI.btnSwitch.addEventListener('click', () => {
+                    STATE.isTracking = false;
+                    if(UI.guide) UI.guide.style.opacity = 1;
+                    if(UI.shutterContainer) UI.shutterContainer.classList.remove('visible');
+                    if(UI.logo) UI.logo.classList.remove('visible'); 
+                    if (STATE.anchor && STATE.anchor.group) {
+                        STATE.anchor.group.visible = false;
+                    }
+                    STATE.mindarThree.switchCamera();
+                    STATE.isFrontCamera = !STATE.isFrontCamera;
+                    const video = document.querySelector('video');
+                    if (video) video.style.transform = STATE.isFrontCamera ? 'scaleX(-1)' : 'scaleX(1)';
+                    showToast(STATE.isFrontCamera ? 'Camera Trước' : 'Camera Sau', '📷');
+                });
+            }
 
-            UI.btnSettings.addEventListener('click', () => {
-                UI.settingsModal.classList.add('show');
-            });
+            if(UI.btnSettings) {
+                UI.btnSettings.addEventListener('click', () => {
+                    if(UI.settingsModal) UI.settingsModal.classList.add('show');
+                });
+            }
+
             document.querySelectorAll('.close-settings').forEach(el => {
                 el.addEventListener('click', () => {
-                    UI.settingsModal.classList.remove('show');
+                    if(UI.settingsModal) UI.settingsModal.classList.remove('show');
                 });
             });
 
-            document.getElementById('particle-slider').addEventListener('input', (e) => {
-                CONFIG.PARTICLE_COUNT = parseInt(e.target.value);
-                document.getElementById('particle-count-display').textContent = CONFIG.PARTICLE_COUNT;
-                UI.particleValue.textContent = CONFIG.PARTICLE_COUNT;
-            });
+            // --- SAFELY HANDLE SETTINGS SLIDERS ---
+            const particleSlider = document.getElementById('particle-slider');
+            const particleDisplay = document.getElementById('particle-count-display');
+            if(particleSlider && particleDisplay) {
+                particleSlider.addEventListener('input', (e) => {
+                    CONFIG.PARTICLE_COUNT = parseInt(e.target.value);
+                    particleDisplay.textContent = CONFIG.PARTICLE_COUNT;
+                    if(UI.particleValue) UI.particleValue.textContent = CONFIG.PARTICLE_COUNT;
+                });
+            }
 
-            document.getElementById('wind-slider').addEventListener('input', (e) => {
-                CONFIG.WIND_MULTIPLIER = parseFloat(e.target.value) / 100;
-                document.getElementById('wind-display').textContent = e.target.value + '%';
-                if (STATE.sakuraMesh && STATE.sakuraMesh.material.uniforms) {
-                    STATE.sakuraMesh.material.uniforms.uWindMultiplier.value = CONFIG.WIND_MULTIPLIER;
-                }
-            });
+            const windSlider = document.getElementById('wind-slider');
+            const windDisplay = document.getElementById('wind-display');
+            if(windSlider && windDisplay) {
+                windSlider.addEventListener('input', (e) => {
+                    CONFIG.WIND_MULTIPLIER = parseFloat(e.target.value) / 100;
+                    windDisplay.textContent = e.target.value + '%';
+                    if (STATE.sakuraMesh && STATE.sakuraMesh.material.uniforms) {
+                        STATE.sakuraMesh.material.uniforms.uWindMultiplier.value = CONFIG.WIND_MULTIPLIER;
+                    }
+                });
+            }
 
-            UI.btnRetake.addEventListener('click', () => {
-                UI.reviewModal.classList.remove('show');
-                URL.revokeObjectURL(UI.previewImage.src);
-                UI.previewImage.src = "";
-            });
+            if(UI.btnRetake) {
+                UI.btnRetake.addEventListener('click', () => {
+                    if(UI.reviewModal) UI.reviewModal.classList.remove('show');
+                    if(UI.previewImage && UI.previewImage.src) {
+                        URL.revokeObjectURL(UI.previewImage.src);
+                        UI.previewImage.src = "";
+                    }
+                });
+            }
 
-            UI.btnDownload.addEventListener('click', () => {
-                if(STATE.capturedDataUrl) {
-                    const link = document.createElement('a');
-                    link.download = `PHD-Sakura-${Date.now()}.png`;
-                    link.href = STATE.capturedDataUrl;
-                    link.click();
-                    showToast('Đã lưu ảnh!', '✅');
-                }
-            });
+            if(UI.btnDownload) {
+                UI.btnDownload.addEventListener('click', () => {
+                    if(STATE.capturedDataUrl) {
+                        const link = document.createElement('a');
+                        link.download = `PHD-Sakura-${Date.now()}.png`;
+                        link.href = STATE.capturedDataUrl;
+                        link.click();
+                        showToast('Đã lưu ảnh!', '✅');
+                    }
+                });
+            }
         }
 
         function setupInteraction() {
@@ -859,8 +926,10 @@
 
         // ============ CAPTURE LOGIC ============
         function prepareScreenshot() {
-            UI.flash.style.opacity = 1;
-            setTimeout(() => UI.flash.style.opacity = 0, 150);
+            if(UI.flash) {
+                UI.flash.style.opacity = 1;
+                setTimeout(() => UI.flash.style.opacity = 0, 150);
+            }
 
             const video = document.querySelector('video');
             const canvas = document.querySelector('canvas');
@@ -910,8 +979,8 @@
             }
 
             STATE.capturedDataUrl = tempCanvas.toDataURL('image/png', 1.0);
-            UI.previewImage.src = STATE.capturedDataUrl;
-            UI.reviewModal.classList.add('show');
+            if(UI.previewImage) UI.previewImage.src = STATE.capturedDataUrl;
+            if(UI.reviewModal) UI.reviewModal.classList.add('show');
         }
 
         // ============ INIT ============
@@ -959,8 +1028,10 @@
 
                 await STATE.mindarThree.start();
 
-                UI.loader.style.opacity = 0;
-                setTimeout(() => UI.loader.style.display = 'none', 500);
+                if(UI.loader) {
+                    UI.loader.style.opacity = 0;
+                    setTimeout(() => UI.loader.style.display = 'none', 500);
+                }
 
                 STATE.renderer.setAnimationLoop(() => {
                     const dt = STATE.clock.getDelta();
