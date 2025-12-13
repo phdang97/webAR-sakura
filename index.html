@@ -4,30 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JCB Sakura Experience | Premium WebAR</title>
-    
-    <!-- 
-      KIẾN TRÚC DỰ ÁN: SINGLE FILE 
-      - CSS: Internal
-      - JS: Module based
-      - Assets: Procedural / Base64 / CDN
-    -->
 
-    <!-- PRELOAD FONTS -->
+    <!-- FONTS & ICONS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700&family=Playfair+Display:ital,wght@1,400;1,600&display=swap" rel="stylesheet">
-    
-    <!-- ICONS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- CSS STYLES (Glassmorphism & Layout) -->
     <style>
         :root {
-            --primary-color: #be1e2d; /* JCB Red inspired */
+            --primary-color: #be1e2d;
             --sakura-pink: #ffb7c5;
+            --sakura-deep: #ff8fab;
             --glass-bg: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.3);
-            --text-main: #ffffff;
+            --glass-border: rgba(255, 255, 255, 0.25);
             --font-display: 'Playfair Display', serif;
             --font-body: 'Montserrat', sans-serif;
         }
@@ -37,199 +27,166 @@
         body {
             margin: 0; padding: 0; overflow: hidden;
             font-family: var(--font-body);
-            background-color: #000; /* Fallback */
-            overscroll-behavior: none; /* Prevent pull-to-refresh on mobile */
+            background-color: #000;
         }
 
-        /* --- AR CONTAINER --- */
+        /* --- AR VIEW --- */
         #ar-container {
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
             z-index: 1; overflow: hidden;
         }
 
-        /* --- UI LAYER (Z-index > AR) --- */
+        /* --- UI LAYER --- */
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10; pointer-events: none; /* Let clicks pass to AR */
+            z-index: 10; pointer-events: none;
             display: flex; flex-direction: column; justify-content: space-between;
         }
-
-        /* Interactive elements need pointer-events: auto */
         .interactive { pointer-events: auto; cursor: pointer; }
 
-        /* --- LOADING SCREEN --- */
+        /* --- LOADING --- */
         #loader {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #1a1a1a, #000);
+            background: #111;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 999; transition: opacity 0.8s ease-out;
+            z-index: 999; transition: opacity 0.5s ease-out;
         }
         .spinner {
-            width: 50px; height: 50px;
+            width: 40px; height: 40px;
             border: 3px solid rgba(255,255,255,0.1);
             border-top: 3px solid var(--sakura-pink);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
-        .loading-text {
-            color: white; font-size: 0.9rem; letter-spacing: 2px;
-            opacity: 0.8; text-transform: uppercase;
-        }
+        .loading-text { color: #888; font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; }
 
-        /* --- SCANNING GUIDE --- */
-        #scan-guide {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            opacity: 0; transition: opacity 0.5s;
-        }
-        .scan-frame {
-            width: 70vw; height: 70vw; max-width: 300px; max-height: 300px; /* Responsive mobile */
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 20px;
-            position: relative;
-            box-shadow: 0 0 30px rgba(255, 183, 197, 0.1);
-            backdrop-filter: blur(2px);
-            margin: 0 auto;
-        }
-        .scan-frame::after {
-            content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
-            border-radius: 20px;
-            border: 2px solid transparent;
-            background: linear-gradient(45deg, var(--sakura-pink), transparent, var(--sakura-pink)) border-box;
-            -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-            mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: destination-out;
-            mask-composite: exclude;
-            animation: pulse-border 2s infinite;
-        }
-        .scan-text {
-            margin-top: 20px; color: white; font-weight: 300; font-size: 0.9rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-            background: rgba(0,0,0,0.4); padding: 8px 20px; border-radius: 20px;
-            display: inline-block;
-        }
-
-        /* --- TOP BAR (Brand + Switch Camera) --- */
+        /* --- TOP BAR --- */
         .top-bar {
             display: flex; justify-content: space-between; align-items: flex-start;
-            padding: 20px; margin-top: 10px;
+            padding: 20px; margin-top: safe-area-inset-top; /* iOS notch support */
         }
 
-        /* --- BRANDING (GLASSMORPHISM) --- */
+        /* Branding */
         #branding {
             opacity: 0; transform: translateY(-20px);
-            transition: all 1s cubic-bezier(0.19, 1, 0.22, 1);
+            transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         .logo-box {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            padding: 10px 20px;
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            padding: 12px 24px;
             border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         }
         .brand-name {
-            font-family: var(--font-display); font-size: 1.3rem; font-weight: 700;
-            background: linear-gradient(to right, #fff, #ffe0e6);
+            font-family: var(--font-display); font-size: 1.4rem; font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, #ffd1dc 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(255, 183, 197, 0.3);
         }
         .tagline {
-            font-size: 0.65rem; color: #eee; letter-spacing: 1.5px; margin-top: 2px; text-transform: uppercase; font-weight: 500;
+            font-size: 0.65rem; color: #eee; letter-spacing: 2px; margin-top: 4px; 
+            text-transform: uppercase; font-weight: 500; opacity: 0.9;
         }
 
-        /* --- CAMERA SWITCH BTN --- */
+        /* Camera Switch */
         .switch-btn {
-            width: 44px; height: 44px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
+            width: 48px; height: 48px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.3);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             color: white; font-size: 1.2rem;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            transition: transform 0.2s, background 0.3s;
+            backdrop-filter: blur(4px);
+            transition: transform 0.3s;
         }
-        .switch-btn:active { transform: rotate(180deg) scale(0.9); background: rgba(255,255,255,0.3); }
+        .switch-btn:active { transform: rotate(180deg); background: rgba(255,255,255,0.2); }
+
+        /* --- SCAN GUIDE --- */
+        #scan-guide {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            opacity: 0; transition: opacity 0.4s;
+        }
+        .scan-frame {
+            width: 65vw; height: 65vw; max-width: 280px; max-height: 280px;
+            border-radius: 24px;
+            position: relative;
+            box-shadow: 0 0 0 1000px rgba(0,0,0,0.6); /* Darken surrounding */
+        }
+        .scan-frame::before {
+            content: ''; position: absolute; inset: 0;
+            border-radius: 24px; padding: 2px;
+            background: linear-gradient(45deg, transparent, var(--sakura-pink), transparent);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor; mask-composite: exclude;
+            animation: border-rotate 3s linear infinite;
+        }
+        .scan-text {
+            margin-top: 25px; color: white; font-weight: 400; font-size: 0.95rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            opacity: 0.9;
+        }
 
         /* --- CONTROLS --- */
         #controls {
-            width: 100%; padding-bottom: 40px;
+            width: 100%; padding-bottom: 50px;
             display: flex; justify-content: center; align-items: center;
-            opacity: 0; transform: translateY(30px);
+            opacity: 0; transform: translateY(40px);
             transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .capture-btn {
-            width: 80px; height: 80px;
+        .capture-ring {
+            width: 84px; height: 84px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            border: 4px solid rgba(255, 255, 255, 0.8);
-            position: relative;
-            cursor: pointer;
-            backdrop-filter: blur(4px);
-            transition: transform 0.2s;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            border: 2px solid rgba(255,255,255,0.4);
             display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(4px);
         }
-        .capture-btn::after {
-            content: ''; width: 64px; height: 64px;
-            background: white; border-radius: 50%;
-            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-            box-shadow: 0 0 15px rgba(255,255,255,0.5);
+        .capture-btn {
+            width: 70px; height: 70px;
+            background: #fff; border-radius: 50%;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 20px rgba(255,255,255,0.3);
         }
-        .capture-btn:active { transform: scale(0.92); }
-        .capture-btn:active::after { width: 56px; height: 56px; background: var(--sakura-pink); box-shadow: 0 0 20px var(--sakura-pink); }
-        .capture-btn i {
-            position: absolute; z-index: 2; color: #333; opacity: 0; font-size: 1.5rem;
-            transition: opacity 0.3s;
-        }
+        .capture-btn:active { transform: scale(0.85); background: var(--sakura-pink); }
 
-        /* --- FLASH EFFECT --- */
+        /* --- FLASH & MODAL --- */
         #flash {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; opacity: 0; pointer-events: none; z-index: 1000;
+            position: absolute; inset: 0; background: white; opacity: 0; pointer-events: none; z-index: 2000;
         }
-
-        /* --- SNAPSHOT MODAL --- */
         #preview-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 2000;
+            position: fixed; inset: 0; background: #000; z-index: 3000;
             display: none; flex-direction: column; align-items: center; justify-content: center;
-            opacity: 0; transition: opacity 0.3s;
         }
-        #preview-modal.show { opacity: 1; }
-        
-        .preview-container {
-            position: relative;
-            max-width: 85%; max-height: 70%;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            border-radius: 16px; overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.1);
+        #preview-img {
+            width: auto; height: auto; max-width: 90vw; max-height: 75vh;
+            border-radius: 12px; border: 1px solid #333;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
         }
-        #preview-img { width: 100%; height: auto; display: block; }
-        
-        .modal-actions { margin-top: 30px; display: flex; gap: 20px; }
+        .modal-actions {
+            margin-top: 25px; width: 90%; display: flex; justify-content: center; gap: 15px;
+        }
         .btn {
-            padding: 14px 28px; border-radius: 50px; border: none;
-            font-family: var(--font-body); font-weight: 600; font-size: 0.95rem; cursor: pointer;
-            display: flex; align-items: center; gap: 8px;
-            transition: transform 0.2s, opacity 0.2s;
+            flex: 1; max-width: 160px;
+            padding: 14px 0; border-radius: 50px; border: none;
+            font-family: var(--font-body); font-weight: 600; font-size: 0.9rem;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .btn:active { transform: scale(0.95); }
-        .btn-primary { background: var(--sakura-pink); color: #000; box-shadow: 0 4px 15px rgba(255, 183, 197, 0.4); }
-        .btn-secondary { background: rgba(255,255,255,0.15); color: #fff; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
+        .btn-close { background: #333; color: #fff; }
+        .btn-save { background: var(--sakura-pink); color: #000; }
 
-        /* ANIMATIONS */
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes pulse-border { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-        
-        /* Utility */
+        /* --- UTILS --- */
         .hidden { display: none !important; }
         .fade-in { opacity: 1 !important; transform: translateY(0) !important; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes border-rotate { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
     </style>
 
-    <!-- IMPORT MAP: Three.js & MindAR -->
     <script type="importmap">
     {
         "imports": {
@@ -242,12 +199,9 @@
 </head>
 <body>
 
-    <!-- AR CONTAINER -->
     <div id="ar-container"></div>
 
-    <!-- UI LAYER -->
     <div id="ui-layer">
-        <!-- Top Bar: Brand & Switch Camera -->
         <div class="top-bar">
             <div id="branding">
                 <div class="logo-box">
@@ -255,111 +209,99 @@
                     <div class="tagline">Premium Experience</div>
                 </div>
             </div>
-            
             <div class="interactive switch-btn" id="switchCameraBtn">
-                <i class="fa-solid fa-camera-rotate"></i>
+                <i class="fa-solid fa-arrows-rotate"></i>
             </div>
         </div>
 
-        <!-- Center Guide -->
         <div id="scan-guide">
             <div class="scan-frame"></div>
-            <div class="scan-text">Di chuyển camera vào Backdrop</div>
+            <div class="scan-text">Di chuyển camera vào thẻ</div>
         </div>
 
-        <!-- Bottom Controls -->
         <div id="controls" class="interactive">
-            <div class="capture-btn" id="captureBtn"></div>
+            <div class="capture-ring">
+                <div class="capture-btn" id="captureBtn"></div>
+            </div>
         </div>
     </div>
 
-    <!-- UTILITIES -->
-    <div id="loader">
-        <div class="spinner"></div>
-        <div class="loading-text">Loading Experience...</div>
-    </div>
+    <div id="loader"><div class="spinner"></div><div class="loading-text">Initializing...</div></div>
     <div id="flash"></div>
 
-    <!-- PREVIEW MODAL -->
     <div id="preview-modal" class="interactive">
-        <div class="preview-container">
-            <img id="preview-img" src="" alt="Capture">
-        </div>
+        <img id="preview-img" src="" alt="Capture">
         <div class="modal-actions">
-            <button class="btn btn-secondary" id="closeModal">
-                <i class="fa-solid fa-xmark"></i> Đóng
-            </button>
-            <button class="btn btn-primary" id="downloadBtn">
-                <i class="fa-solid fa-download"></i> Lưu Ảnh
-            </button>
+            <button class="btn btn-close" id="closeModal">Bỏ qua</button>
+            <button class="btn btn-save" id="downloadBtn"><i class="fa-solid fa-download"></i> Tải ảnh</button>
         </div>
     </div>
 
-    <!-- MAIN LOGIC -->
     <script type="module">
         import * as THREE from 'three';
         import { MindARThree } from 'mindar-image-three';
 
         // ----------------------------------------------------
-        // CẤU HÌNH (CONFIGURATION)
+        // CONFIG & STATE
         // ----------------------------------------------------
-        
-        // Link file .mind (Hiện tại dùng Demo Raccoon)
         const mindFileUrl = 'targets.mind';
         
-        // Cấu hình Render & Hiệu ứng
         const CONFIG = {
-            petalCount: 600,         
-            petalSize: 0.15,         
-            gravity: 0.08,           // [UPDATE] Giảm tốc độ rơi (nhẹ nhàng hơn)
-            windStrength: 0.4,       // [UPDATE] Gió nhẹ hơn
-            quality: 'high'          
+            petalCount: 800,        // Tăng mật độ hoa
+            petalSize: 0.18,        // Hoa to hơn chút để thấy texture
+            gravity: 0.05,          // Rơi rất chậm (Realism)
+            windStrength: 0.3       // Gió nhẹ
         };
 
-        // ----------------------------------------------------
-        // SYSTEM VARIABLES
-        // ----------------------------------------------------
         let mindarThree = null;
         let renderer, scene, camera;
-        let sakuraMesh; 
+        let sakuraMesh = null;
         let clock = new THREE.Clock();
         let isTracking = false;
-        let currentFacingMode = 'environment'; // 'environment' (sau) or 'user' (trước)
         
-        const mouse = new THREE.Vector2();
-        const windForce = new THREE.Vector2(0, 0);
-
         // UI Elements
-        const uiLoader = document.getElementById('loader');
         const uiScan = document.getElementById('scan-guide');
         const uiBrand = document.getElementById('branding');
         const uiControls = document.getElementById('controls');
-        const uiFlash = document.getElementById('flash');
-        const switchCameraBtn = document.getElementById('switchCameraBtn');
+        const uiLoader = document.getElementById('loader');
 
         // ----------------------------------------------------
-        // 1. PROCEDURAL ASSETS (Tạo Texture bằng code)
+        // 1. ASSET: REALISTIC PETAL TEXTURE
         // ----------------------------------------------------
-        function createPetalTexture() {
+        function createRealPetalTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 128;
-            canvas.height = 128;
+            canvas.width = 256; // Tăng độ phân giải
+            canvas.height = 256;
             const ctx = canvas.getContext('2d');
 
-            ctx.beginPath();
-            ctx.moveTo(64, 120); 
-            ctx.bezierCurveTo(20, 100, 20, 40, 64, 20); 
-            ctx.bezierCurveTo(64, 20, 64, 40, 64, 40); 
-            ctx.bezierCurveTo(64, 40, 64, 20, 64, 20);
-            ctx.bezierCurveTo(108, 40, 108, 100, 64, 120); 
-            ctx.fillStyle = '#ffc0cb';
+            // Tạo hình dáng cánh hoa tự nhiên (Heart-shape biến thể)
+            ctx.translate(128, 128);
+            ctx.scale(1, 1.2); // Kéo dài chút
             
-            const grd = ctx.createRadialGradient(64, 40, 5, 64, 80, 60);
-            grd.addColorStop(0, '#ffffff');
-            grd.addColorStop(0.4, '#ffc0cb'); 
-            grd.addColorStop(1, '#ff69b4');   
+            ctx.beginPath();
+            // Vẽ cánh hoa với đường cong Bezier mềm mại hơn
+            ctx.moveTo(0, 80); // Đáy nhọn
+            ctx.bezierCurveTo(-50, 40, -80, -40, 0, -80); // Cạnh trái cong ra rồi vào
+            ctx.bezierCurveTo(80, -40, 50, 40, 0, 80); // Cạnh phải đối xứng
+            
+            // Gradient phức tạp: Trắng ở tâm, hồng phấn ở giữa, hồng đậm ở viền
+            const grd = ctx.createRadialGradient(0, -20, 10, 0, 0, 100);
+            grd.addColorStop(0, '#fff0f5');   // Lavender blush (tâm)
+            grd.addColorStop(0.4, '#ffb7c5'); // Sakura pink
+            grd.addColorStop(0.9, '#ff9ebb'); // Darker pink
+            grd.addColorStop(1, '#ff6b9d');   // Edge border
+            
             ctx.fillStyle = grd;
             ctx.fill();
+
+            // Vẽ gân lá (Veins) cho real
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.strokeStyle = 'rgba(200, 50, 80, 0.15)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 70); ctx.quadraticCurveTo(-20, 0, -10, -50);
+            ctx.moveTo(0, 70); ctx.quadraticCurveTo(20, 0, 10, -50);
+            ctx.stroke();
 
             const texture = new THREE.CanvasTexture(canvas);
             texture.needsUpdate = true;
@@ -367,13 +309,12 @@
         }
 
         // ----------------------------------------------------
-        // 2. SHADERS (GLSL - Slow Motion Update)
+        // 2. SHADERS (Real Physics Update)
         // ----------------------------------------------------
         const sakuraVertexShader = `
             uniform float time;
-            uniform vec2 wind;
             attribute float scale;
-            attribute vec3 randoms; 
+            attribute vec3 randoms; // x: speed, y: rot speed, z: phase
             
             varying vec2 vUv;
             varying float vAlpha;
@@ -384,334 +325,321 @@
                 vec3 pos = position * scale;
                 vec3 instancePos = instanceMatrix[3].xyz;
                 
-                // [UPDATE] Tốc độ rơi được nhân hệ số nhỏ hơn (0.2) để bay lơ lửng
-                float fallSpeed = (0.5 + randoms.x) * 0.2; 
+                // Physics: "Falling Leaf" motion
+                // Hoa không rơi thẳng mà lướt qua lại
                 
-                // Tính toán vị trí Y (Loop 10 đơn vị)
-                float yOffset = -mod(time * fallSpeed + instancePos.y, 10.0) + 5.0; 
+                float t = time * (0.2 + randoms.x * 0.3); // Time scale per particle
                 
-                // Gió thổi ngang
-                float driftX = sin(time * 0.2 + randoms.z * 10.0) * 0.5 + wind.x;
-                float driftZ = cos(time * 0.15 + randoms.z * 5.0) * 0.5 + wind.y;
+                // Vertical Fall (Trọng lực + Loop)
+                float yVal = -mod(t * 2.0 + instancePos.y, 8.0) + 4.0;
                 
-                // Xoay nhẹ nhàng hơn
-                float rotationSpeed = 1.0 + randoms.y;
-                float angle = time * rotationSpeed * 0.5;
+                // Horizontal Sway (Lắc lư)
+                // Kết hợp 2 sóng sin để tạo quỹ đạo không đều
+                float swayX = sin(t * 1.5 + randoms.z * 10.0) * (0.5 + randoms.y);
+                float swayZ = cos(t * 1.2 + randoms.z * 5.0) * (0.3 + randoms.y);
                 
-                float s = sin(angle);
-                float c = cos(angle);
+                // Rotation (Tumble)
+                // Hoa xoay hỗn loạn khi rơi
+                float rotX = t * 2.0 + randoms.y * 5.0;
+                float rotY = t * 1.0 + randoms.z;
+                float rotZ = t * 0.5;
+                
+                // Apply rotation manually (Simplified Euler)
+                float cx = cos(rotX), sx = sin(rotX);
+                float cy = cos(rotY), sy = sin(rotY);
+                
+                vec3 p = pos;
+                // Rot X
+                vec3 p1 = vec3(p.x, p.y*cx - p.z*sx, p.y*sx + p.z*cx);
+                // Rot Y
+                vec3 p2 = vec3(p1.x*cy + p1.z*sy, p1.y, -p1.x*sy + p1.z*cy);
                 
                 vec3 finalPos = instancePos;
-                finalPos.y = yOffset;
-                finalPos.x += driftX;
-                finalPos.z += driftZ;
+                finalPos.y = yVal;
+                finalPos.x += swayX;
+                finalPos.z += swayZ;
                 
-                vec3 rotatedPos = pos;
-                rotatedPos.x = pos.x * c - pos.z * s;
-                rotatedPos.z = pos.x * s + pos.z * c;
-                rotatedPos.y = pos.y * cos(angle*0.5) - pos.z * sin(angle*0.5);
-
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(finalPos + rotatedPos, 1.0);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(finalPos + p2, 1.0);
                 
-                // Fade mềm mại ở trên và dưới
-                float fade = smoothstep(5.0, 3.5, abs(yOffset)); 
-                vAlpha = fade;
+                // Fade in/out at top/bottom boundaries
+                float fadeTop = smoothstep(4.0, 3.0, yVal);
+                float fadeBot = smoothstep(-3.0, -4.0, yVal);
+                vAlpha = min(fadeTop, 1.0 - fadeBot); 
             }
         `;
 
         const sakuraFragmentShader = `
             uniform sampler2D map;
-            uniform vec3 color;
             varying vec2 vUv;
             varying float vAlpha;
 
             void main() {
                 vec4 texColor = texture2D(map, vUv);
                 if (texColor.a < 0.1) discard;
-                vec3 finalColor = texColor.rgb * color;
-                gl_FragColor = vec4(finalColor, texColor.a * vAlpha);
+                
+                // Tăng độ rực rỡ một chút
+                vec3 color = texColor.rgb * 1.1;
+                
+                gl_FragColor = vec4(color, texColor.a * vAlpha);
+                
+                // Tone mapping fix
                 gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(1.0/2.2)); 
             }
         `;
 
         // ----------------------------------------------------
-        // 3. INITIALIZATION
+        // 3. MAIN LOGIC
         // ----------------------------------------------------
         const init = async () => {
             mindarThree = new MindARThree({
                 container: document.querySelector('#ar-container'),
                 imageTargetSrc: mindFileUrl,
-                filterMinCF: 0.0001, 
+                filterMinCF: 0.0001,
                 filterBeta: 0.001,
-                uiLoading: 'no',     
-                uiScanning: 'no',
-                maxTrack: 1          
+                uiLoading: 'no', uiScanning: 'no', maxTrack: 1
             });
 
-            renderer = mindarThree.renderer;
+            // [CRITICAL] PRESERVE DRAWING BUFFER = TRUE
+            // Để chụp ảnh không bị mất AR layer
+            renderer = new THREE.WebGLRenderer({
+                canvas: mindarThree.renderer.domElement, // Reuse canvas created by mindar
+                alpha: true,
+                antialias: true,
+                preserveDrawingBuffer: true,
+                powerPreference: 'high-performance'
+            });
+            
+            // Re-assign renderer back to mindar wrapper (hacky but needed for custom config)
+            mindarThree.renderer = renderer;
             scene = mindarThree.scene;
             camera = mindarThree.camera;
 
+            // Renderer Setup
             renderer.outputColorSpace = THREE.SRGBColorSpace;
-            renderer.toneMapping = THREE.ACESFilmicToneMapping; 
-            renderer.toneMappingExposure = 1.1;
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-            const hemiLight = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 0.6); 
-            scene.add(hemiLight);
-
-            const dirLight = new THREE.DirectionalLight(0xffeeb1, 1.5); 
-            dirLight.position.set(5, 10, 7.5);
-            dirLight.castShadow = true;
+            renderer.toneMapping = THREE.ReinhardToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            
+            // Light
+            const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffeeb1, 1.0);
+            dirLight.position.set(0, 5, 5);
             scene.add(dirLight);
 
+            // Anchor & Sakura
             const anchor = mindarThree.addAnchor(0);
             setupSakuraSystem(anchor.group);
 
-            const pointLight = new THREE.PointLight(0xff69b4, 2, 5);
-            pointLight.position.set(0, 0.1, 0);
-            anchor.group.add(pointLight);
-
-            // Xử lý sự kiện Tracking
+            // TRACKING EVENTS
             anchor.onTargetFound = () => {
                 isTracking = true;
-                // Chỉ hiện UI nếu đang tracking thành công
-                uiScan.style.opacity = 0;
-                setTimeout(() => uiScan.classList.add('hidden'), 500);
-                
-                uiBrand.classList.add('fade-in');
-                uiControls.classList.add('fade-in');
+                updateUIState(true);
             };
 
             anchor.onTargetLost = () => {
                 isTracking = false;
-                
-                uiScan.classList.remove('hidden');
-                void uiScan.offsetWidth; 
-                uiScan.style.opacity = 1;
-
-                uiBrand.classList.remove('fade-in');
-                uiControls.classList.remove('fade-in');
+                updateUIState(false);
             };
 
             await mindarThree.start();
             
             uiLoader.style.opacity = 0;
-            setTimeout(() => {
-                uiLoader.classList.add('hidden');
-                uiScan.style.opacity = 1; 
-            }, 800);
+            setTimeout(() => { uiLoader.classList.add('hidden'); uiScan.style.opacity = 1; }, 600);
             
             renderer.setAnimationLoop(() => {
-                const delta = clock.getDelta();
                 const elapsed = clock.getElapsedTime();
-
                 if (sakuraMesh && sakuraMesh.material.uniforms) {
                     sakuraMesh.material.uniforms.time.value = elapsed;
-                    windForce.lerp(new THREE.Vector2(0, 0), delta * 2.0);
-                    sakuraMesh.material.uniforms.wind.value.copy(windForce);
                 }
-
                 renderer.render(scene, camera);
             });
         };
 
-        // ----------------------------------------------------
-        // 4. SAKURA SYSTEM
-        // ----------------------------------------------------
         function setupSakuraSystem(group) {
+            // Dùng Plane cong để cánh hoa tự nhiên hơn (Optional, nhưng tốn perf)
+            // Ta dùng Plane phẳng + Shader rotation 3D để tối ưu mobile
             const geometry = new THREE.PlaneGeometry(CONFIG.petalSize, CONFIG.petalSize);
-            const instancedGeometry = new THREE.InstancedBufferGeometry();
-            instancedGeometry.index = geometry.index;
-            instancedGeometry.attributes.position = geometry.attributes.position;
-            instancedGeometry.attributes.uv = geometry.attributes.uv;
+            const instancedGeo = new THREE.InstancedBufferGeometry();
+            instancedGeo.index = geometry.index;
+            instancedGeo.attributes.position = geometry.attributes.position;
+            instancedGeo.attributes.uv = geometry.attributes.uv;
 
             const count = CONFIG.petalCount;
-            const scales = new Float32Array(count);
-            const randoms = new Float32Array(count * 3); 
+            const randoms = new Float32Array(count * 3);
             const matrices = [];
-
-            const tempObj = new THREE.Object3D();
+            const obj = new THREE.Object3D();
 
             for (let i = 0; i < count; i++) {
-                scales[i] = 0.5 + Math.random() * 0.5;
-                randoms[i * 3 + 0] = Math.random(); 
-                randoms[i * 3 + 1] = Math.random(); 
-                randoms[i * 3 + 2] = Math.random(); 
+                randoms[i*3] = Math.random();
+                randoms[i*3+1] = Math.random();
+                randoms[i*3+2] = Math.random();
 
-                tempObj.position.set(
-                    (Math.random() - 0.5) * 4,
-                    (Math.random() - 0.5) * 5,
-                    (Math.random() - 0.5) * 4
+                obj.position.set(
+                    (Math.random() - 0.5) * 5, // X rộng ra
+                    (Math.random() - 0.5) * 6, // Y cao
+                    (Math.random() - 0.5) * 3  // Z sâu
                 );
-                tempObj.updateMatrix();
-                matrices.push(tempObj.matrix.clone());
+                // Random orientation ban đầu
+                obj.rotation.set(Math.random()*3, Math.random()*3, Math.random()*3);
+                
+                // Scale ngẫu nhiên
+                const s = 0.5 + Math.random() * 0.8;
+                obj.scale.set(s, s, s);
+                
+                obj.updateMatrix();
+                matrices.push(obj.matrix.clone());
             }
-            
+
             const material = new THREE.ShaderMaterial({
                 uniforms: {
                     time: { value: 0 },
-                    map: { value: createPetalTexture() },
-                    color: { value: new THREE.Color(0xffffff) }, 
-                    wind: { value: new THREE.Vector2(0, 0) }
+                    map: { value: createRealPetalTexture() }
                 },
                 vertexShader: sakuraVertexShader,
                 fragmentShader: sakuraFragmentShader,
                 transparent: true,
-                depthWrite: false, 
+                depthWrite: false,
                 side: THREE.DoubleSide
             });
 
             sakuraMesh = new THREE.InstancedMesh(geometry, material, count);
-            for (let i = 0; i < count; i++) sakuraMesh.setMatrixAt(i, matrices[i]);
+            for(let i=0; i<count; i++) sakuraMesh.setMatrixAt(i, matrices[i]);
             
-            sakuraMesh.geometry.setAttribute('scale', new THREE.InstancedBufferAttribute(scales, 1));
+            sakuraMesh.instanceMatrix.needsUpdate = true;
             sakuraMesh.geometry.setAttribute('randoms', new THREE.InstancedBufferAttribute(randoms, 3));
-
-            sakuraMesh.scale.set(1.5, 1.5, 1.5); 
+            
+            // Scale toàn bộ hệ thống hạt để bao phủ anchor
+            sakuraMesh.scale.set(1.5, 1.5, 1.5);
             group.add(sakuraMesh);
         }
 
         // ----------------------------------------------------
-        // 5. UX & CAMERA LOGIC
+        // 4. UI LOGIC (Fixing UX issues)
         // ----------------------------------------------------
-        
-        window.addEventListener('touchstart', (e) => {
-            const touch = e.touches[0];
-            const x = (touch.clientX / window.innerWidth) * 2 - 1;
-            const y = -(touch.clientY / window.innerHeight) * 2 + 1;
-            windForce.x += x * 2.0;
-            windForce.y += y * 2.0;
-        });
 
-        // [FEATURE] Switch Camera
-        switchCameraBtn.addEventListener('click', async () => {
-            if (!mindarThree) return;
-            
-            // Haptic feedback
-            if (navigator.vibrate) navigator.vibrate(50);
-            
-            switchCameraBtn.style.transform = "rotate(180deg)";
-            setTimeout(() => switchCameraBtn.style.transform = "rotate(0deg)", 300);
+        function updateUIState(found) {
+            if (found) {
+                uiScan.style.opacity = 0;
+                setTimeout(() => uiScan.classList.add('hidden'), 300);
+                uiBrand.classList.add('fade-in');
+                uiControls.classList.add('fade-in');
+            } else {
+                uiScan.classList.remove('hidden');
+                void uiScan.offsetWidth; // force reflow
+                uiScan.style.opacity = 1;
+                uiBrand.classList.remove('fade-in');
+                uiControls.classList.remove('fade-in');
+            }
+        }
 
+        // [FIX] CAMERA SWITCH LOGIC
+        const switchBtn = document.getElementById('switchCameraBtn');
+        switchBtn.addEventListener('click', async () => {
+            if(!mindarThree) return;
+            
+            // 1. Force Reset UI state IMMEDIATELY (UX fix)
+            isTracking = false;
+            updateUIState(false);
+            
+            // 2. Animation
+            switchBtn.style.transform = "rotate(180deg)";
+            setTimeout(() => switchBtn.style.transform = "rotate(0deg)", 400);
+
+            // 3. Switch
             try {
                 await mindarThree.switchCamera();
-            } catch (err) {
-                console.warn("Switch camera not supported directly, might need reload", err);
+            } catch(e) {
+                console.log("Switch camera error", e);
             }
         });
 
-        // [FEATURE] Enhanced Screenshot
+        // [FIX] CAPTURE LOGIC (MERGING LAYERS)
         const captureBtn = document.getElementById('captureBtn');
         const modal = document.getElementById('preview-modal');
         const previewImg = document.getElementById('preview-img');
-        const closeModal = document.getElementById('closeModal');
-        const downloadBtn = document.getElementById('downloadBtn');
+        const flash = document.getElementById('flash');
 
         captureBtn.addEventListener('click', () => {
-            if (navigator.vibrate) navigator.vibrate(100);
+            // Flash Effect
+            flash.style.opacity = 1;
+            setTimeout(() => flash.style.opacity = 0, 100);
 
-            uiFlash.style.opacity = 1;
-            uiFlash.style.transition = 'opacity 0.05s';
-            setTimeout(() => {
-                uiFlash.style.opacity = 0;
-                uiFlash.style.transition = 'opacity 0.8s';
-            }, 80);
+            // DOM Elements
+            const video = document.querySelector('video'); // MindAR video background
+            const canvas = document.querySelector('canvas'); // ThreeJS AR layer
+            
+            if(!video || !canvas) return;
 
-            const video = document.querySelector('video');
-            const canvas = document.querySelector('canvas');
-            if (!video || !canvas) return;
+            // Create Merge Canvas
+            const mCanvas = document.createElement('canvas');
+            mCanvas.width = canvas.width;
+            mCanvas.height = canvas.height;
+            const ctx = mCanvas.getContext('2d');
 
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            const ctx = tempCanvas.getContext('2d');
-
-            // 1. Draw Camera Feed
-            // Xử lý scale để video lấp đầy canvas (object-fit: cover logic)
+            // 1. Draw Video Feed (Background)
+            // Tính toán cover fit
             const vRatio = video.videoWidth / video.videoHeight;
             const cRatio = canvas.width / canvas.height;
-            let sWidth, sHeight, sx, sy;
+            let dw, dh, dx, dy;
 
             if (vRatio > cRatio) {
-                sHeight = video.videoHeight;
-                sWidth = sHeight * cRatio;
-                sx = (video.videoWidth - sWidth) / 2;
-                sy = 0;
+                dh = canvas.height; dw = dh * vRatio;
+                dx = (canvas.width - dw) / 2; dy = 0;
             } else {
-                sWidth = video.videoWidth;
-                sHeight = sWidth / cRatio;
-                sx = 0;
-                sy = (video.videoHeight - sHeight) / 2;
+                dw = canvas.width; dh = dw / vRatio;
+                dx = 0; dy = (canvas.height - dh) / 2;
             }
-            
-            // Nếu là camera trước, thường MindAR đã flip video css, nhưng texture thì chưa
-            // Vẽ video lên canvas
-            ctx.save();
-            // Nếu đang dùng camera trước thì lật ảnh lại cho giống gương
-            // (Tuy nhiên MindAR xử lý logic này khá phức tạp, ta vẽ trực tiếp video stream)
-            ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
-            ctx.restore();
+            ctx.drawImage(video, dx, dy, dw, dh);
 
-            // 2. Draw AR Content
+            // 2. Draw AR Layer (Sakura)
+            // Nhờ preserveDrawingBuffer: true, canvas này không bị trắng
             ctx.drawImage(canvas, 0, 0);
 
-            // 3. Draw Watermark (High Quality Text)
-            // Kích thước font dựa trên độ rộng ảnh (Responsive Watermark)
-            const w = tempCanvas.width;
-            const h = tempCanvas.height;
-            const padding = w * 0.05;
+            // 3. Draw Watermark Manually (Vì ta không capture được DOM Overlay)
+            const w = mCanvas.width;
+            const h = mCanvas.height;
+            const p = w * 0.05; // padding
 
-            ctx.shadowColor = "rgba(0,0,0,0.7)";
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetX = 2;
-            ctx.shadowOffsetY = 2;
-
-            // Brand Name
-            ctx.font = `bold ${w * 0.06}px 'Playfair Display'`;
+            // Logo Style
+            ctx.shadowColor = "rgba(0,0,0,0.5)";
+            ctx.shadowBlur = 4;
             ctx.fillStyle = "white";
-            ctx.textAlign = "left";
-            ctx.fillText("Uniquely Yours", padding, h - padding * 1.5);
-
+            
+            // Brand Name
+            ctx.font = `bold ${w * 0.07}px 'Playfair Display'`;
+            ctx.fillText("Uniquely Yours", p, h - p * 1.8);
+            
             // Tagline
-            ctx.font = `${w * 0.03}px 'Montserrat'`;
-            ctx.letterSpacing = "2px"; // Canvas không hỗ trợ letterSpacing chuẩn ở mọi trình duyệt cũ, nhưng cứ để
-            ctx.fillText("PREMIUM EXPERIENCE", padding, h - padding * 0.8);
+            ctx.font = `500 ${w * 0.035}px 'Montserrat'`;
+            ctx.letterSpacing = "2px";
+            ctx.fillText("PREMIUM EXPERIENCE", p, h - p);
 
-            // Logo Box Border (Giả lập khung kính của logo)
-            ctx.strokeStyle = "rgba(255,255,255,0.5)";
-            ctx.lineWidth = 2;
+            // Decorative Line
+            ctx.strokeStyle = "rgba(255,183,197, 0.8)";
+            ctx.lineWidth = 3;
             ctx.beginPath();
-            // Vẽ một đường line trang trí bên cạnh text
-            ctx.moveTo(padding - 10, h - padding * 2.5);
-            ctx.lineTo(padding - 10, h - padding * 0.5);
+            ctx.moveTo(p, h - p * 2.6);
+            ctx.lineTo(p + w * 0.1, h - p * 2.6);
             ctx.stroke();
 
-            // Show Modal
-            const dataURL = tempCanvas.toDataURL('image/png');
-            previewImg.src = dataURL;
+            // Show Result
+            previewImg.src = mCanvas.toDataURL('image/jpeg', 0.95);
             modal.style.display = 'flex';
             
-            // Force reflow for fade in
-            void modal.offsetWidth; 
-            modal.classList.add('show');
-            
-            downloadBtn.onclick = () => {
+            // Setup Download
+            document.getElementById('downloadBtn').onclick = () => {
                 const link = document.createElement('a');
-                link.download = `JCB-Sakura-${Date.now()}.png`;
-                link.href = dataURL;
+                link.download = `JCB-AR-${Date.now()}.jpg`;
+                link.href = previewImg.src;
                 link.click();
             };
         });
 
-        closeModal.addEventListener('click', () => {
-            modal.classList.remove('show');
-            setTimeout(() => modal.style.display = 'none', 300);
+        document.getElementById('closeModal').addEventListener('click', () => {
+            modal.style.display = 'none';
         });
 
         init();
-
     </script>
 </body>
 </html>
