@@ -448,51 +448,6 @@
         </div>
     </div>
 
-    <!-- Review Modal -->
-    <div id="review-modal">
-        <div class="review-image-container">
-            <img id="preview-image" src="" alt="Captured">
-        </div>
-        <div class="review-controls">
-            <button class="btn-review btn-retry" id="btn-retake">
-                <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-                <span>CHỤP LẠI</span>
-            </button>
-            <button class="btn-review btn-save" id="btn-download">
-                <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
-                <span>LƯU ẢNH</span>
-            </button>
-        </div>
-    </div>
-
-    <!-- Settings Modal -->
-    <div id="settings-modal">
-        <div class="settings-box">
-            <div class="settings-header">
-                <div class="settings-title">CÀI ĐẶT</div>
-                <div style="cursor:pointer;" class="close-settings">✕</div>
-            </div>
-            
-            <div class="setting-item">
-                <div class="setting-label">
-                    <span>Số lượng hoa</span>
-                    <span id="particle-count-display">1500</span>
-                </div>
-                <input type="range" id="particle-slider" min="500" max="3000" step="100" value="1500">
-            </div>
-
-            <div class="setting-item">
-                <div class="setting-label">
-                    <span>Sức gió</span>
-                    <span id="wind-display">100%</span>
-                </div>
-                <input type="range" id="wind-slider" min="0" max="200" step="10" value="100">
-            </div>
-
-            <button class="btn-close-settings close-settings">ĐÓNG</button>
-        </div>
-    </div>
-
     <!-- FX & Toast -->
     <div id="flash"></div>
     <div id="toast"></div>
@@ -505,6 +460,7 @@
         const CONFIG = {
             MIND_FILE_PATH: 'targets.mind',
             PARTICLE_COUNT: 1500,
+            POLLEN_COUNT: 500, // New effect
             WIND_MULTIPLIER: 1.0,
             SHOW_STATS: false
         };
@@ -517,6 +473,7 @@
             camera: null,
             anchor: null,
             sakuraMesh: null,
+            pollenMesh: null, // New mesh
             isFrontCamera: false,
             isTracking: false,
             clock: new THREE.Clock(),
@@ -525,14 +482,14 @@
             fps: 60,
             frameCount: 0,
             lastTime: performance.now(),
-            capturedBlob: null // For review
+            capturedBlob: null
         };
 
         // ============ UI ELEMENTS ============
         const UI = {
             loader: document.getElementById('loading-screen'),
             guide: document.getElementById('guide-box'),
-            logo: document.querySelector('.logo-minimal'), // Reference to Logo
+            logo: document.querySelector('.logo-minimal'),
             statsPanel: document.getElementById('stats-panel'),
             fpsValue: document.getElementById('fps-value'),
             particleValue: document.getElementById('particle-value'),
@@ -543,7 +500,6 @@
             btnSwitch: document.getElementById('btn-switch'),
             btnSettings: document.getElementById('btn-settings'),
             flash: document.getElementById('flash'),
-            // Review Elements
             reviewModal: document.getElementById('review-modal'),
             previewImage: document.getElementById('preview-image'),
             btnRetake: document.getElementById('btn-retake'),
@@ -569,16 +525,14 @@
             }
         }
 
-        // ============ SHADER CODE (PRESERVED LOGIC) ============
+        // ============ SHADER CODE (Sakura) ============
         const vertexShader = `
             uniform float uTime;
             uniform vec3 uMouse;
             uniform float uWindStrength;
             uniform float uWindMultiplier;
-            
             attribute vec3 aRandom;
             attribute vec3 aOffset;
-
             varying vec2 vUv;
             varying float vAlpha;
             varying vec3 vNormal;
@@ -600,7 +554,6 @@
                 vUv = uv;
                 vNormal = normal;
                 vec3 pos = aOffset;
-
                 float speed = aRandom.x * 0.3 + 0.1;
                 float fallHeight = 8.0;
                 float yOffset = mod(uTime * speed, fallHeight);
@@ -609,21 +562,17 @@
 
                 float windX = sin(uTime * 0.5 + aRandom.y * 5.0) * 0.3 * uWindMultiplier;
                 float windZ = cos(uTime * 0.3 + aRandom.y * 3.0) * 0.2 * uWindMultiplier;
-                
                 float dist = distance(pos.xy, uMouse.xy * 5.0);
                 float repulsion = smoothstep(2.0, 0.0, dist) * uWindStrength * uWindMultiplier;
-                
                 pos.x += windX + (repulsion * 1.5 * sign(pos.x - uMouse.x * 5.0));
                 pos.z += windZ;
 
                 float rotAngle = uTime * (aRandom.z * 2.0) + aRandom.y;
                 vec3 rotAxis = normalize(vec3(sin(aRandom.y), cos(aRandom.x), sin(aRandom.z)));
                 mat4 rotMat = rotationMatrix(rotAxis, rotAngle);
-
                 vec4 localPos = rotMat * vec4(position, 1.0);
                 vec4 worldPos = vec4(localPos.xyz + pos, 1.0);
                 vec4 mvPosition = viewMatrix * modelMatrix * worldPos;
-                
                 gl_Position = projectionMatrix * mvPosition;
                 vAlpha = smoothstep(0.0, 1.0, 1.0 - abs(pos.y / 4.0));
             }
@@ -635,25 +584,64 @@
             varying vec2 vUv;
             varying float vAlpha;
             varying vec3 vNormal;
-
             void main() {
                 vec4 texColor = texture2D(uTexture, vUv);
                 if (texColor.a < 0.1) discard;
-                
                 vec3 lightDir = normalize(vec3(0.5, 1.0, 0.5));
                 float diff = max(dot(vNormal, lightDir), 0.0);
                 vec3 lighting = vec3(0.6) + (vec3(0.4) * diff);
                 vec3 finalColor = uColor * texColor.rgb * lighting * 1.2;
-                
                 gl_FragColor = vec4(finalColor, texColor.a * vAlpha);
             }
         `;
 
-        // ============ PARTICLE SYSTEM (PRESERVED LOGIC) ============
+        // ============ SHADER CODE (Pollen/Magic Dust) ============
+        const pollenVertexShader = `
+            uniform float uTime;
+            attribute vec3 aRandom;
+            varying float vAlpha;
+            
+            void main() {
+                vec3 pos = position;
+                // Move pollen gently
+                pos.y += mod(uTime * 0.2 + aRandom.y * 10.0, 8.0) - 4.0;
+                pos.x += sin(uTime * 0.3 + aRandom.x * 5.0) * 0.5;
+                pos.z += cos(uTime * 0.2 + aRandom.z * 5.0) * 0.5;
+                
+                vec4 mvPosition = viewMatrix * modelMatrix * vec4(pos, 1.0);
+                gl_Position = projectionMatrix * mvPosition;
+                
+                // Size attenuation
+                gl_PointSize = (40.0 * aRandom.x + 10.0) * (1.0 / -mvPosition.z);
+                
+                // Twinkle effect
+                vAlpha = 0.4 + 0.6 * sin(uTime * 2.0 + aRandom.y * 10.0);
+            }
+        `;
+
+        const pollenFragmentShader = `
+            varying float vAlpha;
+            void main() {
+                // Soft circle shape
+                vec2 uv = gl_PointCoord.xy - 0.5;
+                float dist = length(uv);
+                if (dist > 0.5) discard;
+                
+                // Glow center
+                float glow = 1.0 - (dist * 2.0);
+                glow = pow(glow, 1.5);
+                
+                // Gold/Warm Pink color
+                vec3 color = vec3(1.0, 0.9, 0.7); 
+                
+                gl_FragColor = vec4(color, glow * vAlpha);
+            }
+        `;
+
+        // ============ PARTICLE SYSTEM (Sakura) ============
         function createParticleSystem() {
             const petalGeo = new THREE.PlaneGeometry(0.06, 0.09, 2, 2);
             const posAttr = petalGeo.attributes.position;
-            
             for (let i = 0; i < posAttr.count; i++) {
                 const x = posAttr.getX(i);
                 posAttr.setZ(i, Math.abs(x) * 0.5);
@@ -733,58 +721,81 @@
 
             STATE.sakuraMesh.instanceMatrix.needsUpdate = true;
             STATE.sakuraMesh.frustumCulled = false;
-
             STATE.anchor.group.add(STATE.sakuraMesh);
+        }
+
+        // ============ PARTICLE SYSTEM (Pollen) ============
+        function createPollenSystem() {
+            const pollenGeo = new THREE.BufferGeometry();
+            const positions = [];
+            const randoms = [];
+            
+            for (let i = 0; i < CONFIG.POLLEN_COUNT; i++) {
+                positions.push(
+                    (Math.random() - 0.5) * 6.0, // x spread
+                    (Math.random() - 0.5) * 6.0, // y spread
+                    (Math.random() - 0.5) * 6.0  // z spread
+                );
+                randoms.push(Math.random(), Math.random(), Math.random());
+            }
+            
+            pollenGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            pollenGeo.setAttribute('aRandom', new THREE.Float32BufferAttribute(randoms, 3));
+            
+            const pollenMat = new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime: { value: 0 }
+                },
+                vertexShader: pollenVertexShader,
+                fragmentShader: pollenFragmentShader,
+                transparent: true,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+            
+            STATE.pollenMesh = new THREE.Points(pollenGeo, pollenMat);
+            STATE.pollenMesh.frustumCulled = false;
+            STATE.anchor.group.add(STATE.pollenMesh);
         }
 
         // ============ EVENT HANDLERS ============
         function setupEventHandlers() {
             STATE.anchor.onTargetFound = () => {
                 STATE.isTracking = true;
-                // UI Logic: Show Capture, Hide Guide, Change Corner Color
                 UI.guide.style.opacity = 0;
                 UI.shutterContainer.classList.add('visible');
-                UI.logo.classList.add('visible'); // Show Logo
+                UI.logo.classList.add('visible'); 
                 document.body.classList.add('tracking-active');
-                
                 STATE.anchor.group.visible = true;
                 showToast('Đã nhận diện thẻ!', '🌸');
             };
 
             STATE.anchor.onTargetLost = () => {
                 STATE.isTracking = false;
-                // UI Logic: Show Guide, Hide Capture, Reset Corner Color
                 UI.guide.style.opacity = 1;
                 UI.shutterContainer.classList.remove('visible');
-                UI.logo.classList.remove('visible'); // Hide Logo
+                UI.logo.classList.remove('visible');
                 document.body.classList.remove('tracking-active');
-                
                 showToast('Mất tín hiệu', '⚠️');
             };
 
             UI.shutterBtn.addEventListener('click', prepareScreenshot);
             
-            // Switch Camera
             UI.btnSwitch.addEventListener('click', () => {
                 STATE.isTracking = false;
                 UI.guide.style.opacity = 1;
                 UI.shutterContainer.classList.remove('visible');
-                UI.logo.classList.remove('visible'); // Hide Logo on Switch
-                
+                UI.logo.classList.remove('visible'); 
                 if (STATE.anchor && STATE.anchor.group) {
                     STATE.anchor.group.visible = false;
                 }
-
                 STATE.mindarThree.switchCamera();
                 STATE.isFrontCamera = !STATE.isFrontCamera;
-                
                 const video = document.querySelector('video');
                 if (video) video.style.transform = STATE.isFrontCamera ? 'scaleX(-1)' : 'scaleX(1)';
-                
                 showToast(STATE.isFrontCamera ? 'Camera Trước' : 'Camera Sau', '📷');
             });
 
-            // Settings Modal
             UI.btnSettings.addEventListener('click', () => {
                 UI.settingsModal.classList.add('show');
             });
@@ -794,7 +805,6 @@
                 });
             });
 
-            // Sliders
             document.getElementById('particle-slider').addEventListener('input', (e) => {
                 CONFIG.PARTICLE_COUNT = parseInt(e.target.value);
                 document.getElementById('particle-count-display').textContent = CONFIG.PARTICLE_COUNT;
@@ -809,10 +819,8 @@
                 }
             });
 
-            // Review Buttons
             UI.btnRetake.addEventListener('click', () => {
                 UI.reviewModal.classList.remove('show');
-                // Clean up memory
                 URL.revokeObjectURL(UI.previewImage.src);
                 UI.previewImage.src = "";
             });
@@ -824,8 +832,6 @@
                     link.href = STATE.capturedDataUrl;
                     link.click();
                     showToast('Đã lưu ảnh!', '✅');
-                    // Optional: Close modal after save
-                    // UI.reviewModal.classList.remove('show');
                 }
             });
         }
@@ -853,7 +859,6 @@
 
         // ============ CAPTURE LOGIC ============
         function prepareScreenshot() {
-            // Flash FX
             UI.flash.style.opacity = 1;
             setTimeout(() => UI.flash.style.opacity = 0, 150);
 
@@ -870,7 +875,6 @@
 
             STATE.renderer.render(STATE.scene, STATE.camera);
 
-            // Draw Video
             if (STATE.isFrontCamera) {
                 ctx.save();
                 ctx.scale(-1, 1);
@@ -880,23 +884,18 @@
                 ctx.drawImage(video, 0, 0, w, h);
             }
 
-            // Draw WebGL Content
             ctx.drawImage(canvas, 0, 0, w, h);
 
-            // Draw Watermark (Only if tracking) - syncing with UI
             if (STATE.isTracking) {
-                // Heuristic scaling for visibility on video resolution
                 const scale = w / 1000; 
                 const fontSizeMain = Math.max(24, 40 * scale);
                 const fontSizeSub = fontSizeMain * 0.35;
-                const margin = 30 * (w/500); // dynamic margin
+                const margin = 30 * (w/500);
 
                 const x = margin;
-                const y = margin + fontSizeMain; // approximate baseline
+                const y = margin + fontSizeMain;
 
                 ctx.save();
-                
-                // Main Text "PHD" matching UI Gradient
                 ctx.font = `800 ${fontSizeMain}px 'Montserrat', sans-serif`;
                 const gradient = ctx.createLinearGradient(x, y - fontSizeMain, x + (fontSizeMain * 2.5), y);
                 gradient.addColorStop(0, '#1f4388');
@@ -904,20 +903,13 @@
                 ctx.fillStyle = gradient;
                 ctx.textAlign = "left";
                 ctx.fillText("PHD", x, y);
-
-                // Sub Text "AR EXPERIENCE"
                 ctx.font = `500 ${fontSizeSub}px 'Montserrat', sans-serif`;
                 ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-                // Canvas text letter spacing is generally standard
                 ctx.fillText("AR EXPERIENCE", x, y + fontSizeSub * 1.5);
-
                 ctx.restore();
             }
 
-            // Create Data URL for preview
             STATE.capturedDataUrl = tempCanvas.toDataURL('image/png', 1.0);
-            
-            // Show Review Modal
             UI.previewImage.src = STATE.capturedDataUrl;
             UI.reviewModal.classList.add('show');
         }
@@ -961,24 +953,31 @@
                 STATE.anchor.group.add(occluder);
 
                 createParticleSystem();
+                createPollenSystem(); // Create new effect
                 setupEventHandlers();
                 setupInteraction();
 
                 await STATE.mindarThree.start();
 
-                // Hide Loader
                 UI.loader.style.opacity = 0;
                 setTimeout(() => UI.loader.style.display = 'none', 500);
 
-                // Animation Loop
                 STATE.renderer.setAnimationLoop(() => {
                     const dt = STATE.clock.getDelta();
+                    const uTime = STATE.clock.getElapsedTime(); // Get total time
+
                     if (STATE.sakuraMesh && STATE.sakuraMesh.material.uniforms) {
                         STATE.sakuraMesh.material.uniforms.uTime.value += dt;
                         STATE.sakuraMesh.material.uniforms.uWindStrength.value *= 0.95;
                         STATE.sakuraMesh.material.uniforms.uWindStrength.value += STATE.uWindStrength * 0.1;
                         STATE.uWindStrength *= 0.9;
                     }
+
+                    // Update Pollen Uniforms
+                    if (STATE.pollenMesh && STATE.pollenMesh.material.uniforms) {
+                         STATE.pollenMesh.material.uniforms.uTime.value = uTime;
+                    }
+
                     STATE.renderer.render(STATE.scene, STATE.camera);
                     updateFPS();
                 });
