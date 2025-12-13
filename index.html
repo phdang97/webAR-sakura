@@ -115,7 +115,6 @@
             width: 70vw; height: 70vw; max-width: 280px; max-height: 280px;
             border-radius: 24px;
             position: relative;
-            /* Reverted to clean look without heavy dark overlay */
             box-shadow: 0 0 30px rgba(255, 183, 197, 0.2);
             border: 1px solid rgba(255,255,255,0.3);
         }
@@ -248,18 +247,19 @@
         // ----------------------------------------------------
         // CONFIG & STATE
         // ----------------------------------------------------
-        const mindFileUrl = 'targets.mind';
+        const mindFileUrl = 'targes.mind';
         
         const CONFIG = {
             petalCount: 800,
             petalSize: 0.18,
-            gravity: 0.08,          // Tinh chỉnh lại một chút để không quá chậm
+            gravity: 0.08,
             windStrength: 0.3
         };
 
         let mindarThree = null;
         let renderer, scene, camera;
         let sakuraMesh = null;
+        let anchor = null; // [MODIFIED] Global anchor reference
         let clock = new THREE.Clock();
         let isTracking = false;
         
@@ -278,7 +278,6 @@
             canvas.height = 256;
             const ctx = canvas.getContext('2d');
 
-            // Tạo hình dáng cánh hoa tự nhiên
             ctx.translate(128, 128);
             ctx.scale(1, 1.2); 
             
@@ -287,7 +286,6 @@
             ctx.bezierCurveTo(-50, 40, -80, -40, 0, -80); 
             ctx.bezierCurveTo(80, -40, 50, 40, 0, 80); 
             
-            // Gradient
             const grd = ctx.createRadialGradient(0, -20, 10, 0, 0, 100);
             grd.addColorStop(0, '#fff0f5');   
             grd.addColorStop(0.4, '#ffb7c5'); 
@@ -297,7 +295,6 @@
             ctx.fillStyle = grd;
             ctx.fill();
 
-            // Veins
             ctx.globalCompositeOperation = 'multiply';
             ctx.strokeStyle = 'rgba(200, 50, 80, 0.15)';
             ctx.lineWidth = 2;
@@ -325,13 +322,10 @@
             void main() {
                 vUv = uv;
                 
-                // Nếu scale = 0, cánh hoa sẽ biến mất. Attribute này rất quan trọng!
                 vec3 pos = position * scale;
                 vec3 instancePos = instanceMatrix[3].xyz;
                 
-                // Physics: "Falling Leaf"
                 float t = time * (0.2 + randoms.x * 0.3); 
-                
                 float yVal = -mod(t * 2.0 + instancePos.y, 8.0) + 4.0;
                 
                 float swayX = sin(t * 1.5 + randoms.z * 10.0) * (0.5 + randoms.y);
@@ -386,15 +380,8 @@
                 uiLoading: 'no', uiScanning: 'no', maxTrack: 1
             });
 
-            renderer = new THREE.WebGLRenderer({
-                canvas: mindarThree.renderer.domElement,
-                alpha: true,
-                antialias: true,
-                preserveDrawingBuffer: true,
-                powerPreference: 'high-performance'
-            });
-            
-            mindarThree.renderer = renderer;
+            // [MODIFIED] Use MindAR's renderer directly instead of creating new one
+            renderer = mindarThree.renderer;
             scene = mindarThree.scene;
             camera = mindarThree.camera;
 
@@ -408,7 +395,8 @@
             dirLight.position.set(0, 5, 5);
             scene.add(dirLight);
 
-            const anchor = mindarThree.addAnchor(0);
+            // [MODIFIED] Assign to global anchor variable
+            anchor = mindarThree.addAnchor(0);
             setupSakuraSystem(anchor.group);
 
             anchor.onTargetFound = () => {
@@ -444,7 +432,7 @@
 
             const count = CONFIG.petalCount;
             const randoms = new Float32Array(count * 3);
-            const scales = new Float32Array(count); // [FIX] Đã thêm mảng scales
+            const scales = new Float32Array(count); 
             const matrices = [];
             const obj = new THREE.Object3D();
 
@@ -453,7 +441,6 @@
                 randoms[i*3+1] = Math.random();
                 randoms[i*3+2] = Math.random();
 
-                // Tạo scale ngẫu nhiên cho từng cánh hoa
                 scales[i] = 0.5 + Math.random() * 0.8; 
 
                 obj.position.set(
@@ -463,7 +450,6 @@
                 );
                 obj.rotation.set(Math.random()*3, Math.random()*3, Math.random()*3);
                 
-                // Scale matrix cũng quan trọng cho bounding volume nhưng shader dùng attribute riêng
                 const s = scales[i];
                 obj.scale.set(s, s, s);
                 
@@ -488,7 +474,6 @@
             
             sakuraMesh.instanceMatrix.needsUpdate = true;
             sakuraMesh.geometry.setAttribute('randoms', new THREE.InstancedBufferAttribute(randoms, 3));
-            // [FIX] Gán attribute scale vào geometry để shader đọc được
             sakuraMesh.geometry.setAttribute('scale', new THREE.InstancedBufferAttribute(scales, 1));
             
             sakuraMesh.scale.set(1.5, 1.5, 1.5);
@@ -518,8 +503,10 @@
         switchBtn.addEventListener('click', async () => {
             if(!mindarThree) return;
             
+            // [MODIFIED] Force Reset UI and Hide 3D Content Immediately
             isTracking = false;
             updateUIState(false);
+            if(anchor) anchor.group.visible = false;
             
             switchBtn.style.transform = "rotate(180deg)";
             setTimeout(() => switchBtn.style.transform = "rotate(0deg)", 400);
@@ -561,7 +548,14 @@
                 dw = canvas.width; dh = dw / vRatio;
                 dx = 0; dy = (canvas.height - dh) / 2;
             }
+            
+            // 1. Draw Background (Video)
             ctx.drawImage(video, dx, dy, dw, dh);
+            
+            // [MODIFIED] 2. Force Render 3D Scene to Buffer to ensure it is not empty
+            renderer.render(scene, camera);
+            
+            // 3. Draw Foreground (AR Canvas)
             ctx.drawImage(canvas, 0, 0);
 
             const w = mCanvas.width;
