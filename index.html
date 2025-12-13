@@ -104,7 +104,7 @@
         }
         .switch-btn:active { transform: rotate(180deg); background: rgba(255,255,255,0.2); }
 
-        /* --- SCAN GUIDE --- */
+        /* --- SCAN GUIDE (CLEAN STYLE) --- */
         #scan-guide {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
@@ -112,14 +112,16 @@
             opacity: 0; transition: opacity 0.4s;
         }
         .scan-frame {
-            width: 65vw; height: 65vw; max-width: 280px; max-height: 280px;
+            width: 70vw; height: 70vw; max-width: 280px; max-height: 280px;
             border-radius: 24px;
             position: relative;
-            box-shadow: 0 0 0 1000px rgba(0,0,0,0.6); /* Darken surrounding */
+            /* Reverted to clean look without heavy dark overlay */
+            box-shadow: 0 0 30px rgba(255, 183, 197, 0.2);
+            border: 1px solid rgba(255,255,255,0.3);
         }
         .scan-frame::before {
-            content: ''; position: absolute; inset: 0;
-            border-radius: 24px; padding: 2px;
+            content: ''; position: absolute; inset: -2px;
+            border-radius: 26px; padding: 2px;
             background: linear-gradient(45deg, transparent, var(--sakura-pink), transparent);
             -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -129,6 +131,8 @@
         .scan-text {
             margin-top: 25px; color: white; font-weight: 400; font-size: 0.95rem;
             text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.4); padding: 8px 16px; border-radius: 20px;
+            display: inline-block;
             opacity: 0.9;
         }
 
@@ -247,10 +251,10 @@
         const mindFileUrl = 'targets.mind';
         
         const CONFIG = {
-            petalCount: 800,        // Tăng mật độ hoa
-            petalSize: 0.18,        // Hoa to hơn chút để thấy texture
-            gravity: 0.05,          // Rơi rất chậm (Realism)
-            windStrength: 0.3       // Gió nhẹ
+            petalCount: 800,
+            petalSize: 0.18,
+            gravity: 0.08,          // Tinh chỉnh lại một chút để không quá chậm
+            windStrength: 0.3
         };
 
         let mindarThree = null;
@@ -270,31 +274,30 @@
         // ----------------------------------------------------
         function createRealPetalTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 256; // Tăng độ phân giải
+            canvas.width = 256; 
             canvas.height = 256;
             const ctx = canvas.getContext('2d');
 
-            // Tạo hình dáng cánh hoa tự nhiên (Heart-shape biến thể)
+            // Tạo hình dáng cánh hoa tự nhiên
             ctx.translate(128, 128);
-            ctx.scale(1, 1.2); // Kéo dài chút
+            ctx.scale(1, 1.2); 
             
             ctx.beginPath();
-            // Vẽ cánh hoa với đường cong Bezier mềm mại hơn
-            ctx.moveTo(0, 80); // Đáy nhọn
-            ctx.bezierCurveTo(-50, 40, -80, -40, 0, -80); // Cạnh trái cong ra rồi vào
-            ctx.bezierCurveTo(80, -40, 50, 40, 0, 80); // Cạnh phải đối xứng
+            ctx.moveTo(0, 80); 
+            ctx.bezierCurveTo(-50, 40, -80, -40, 0, -80); 
+            ctx.bezierCurveTo(80, -40, 50, 40, 0, 80); 
             
-            // Gradient phức tạp: Trắng ở tâm, hồng phấn ở giữa, hồng đậm ở viền
+            // Gradient
             const grd = ctx.createRadialGradient(0, -20, 10, 0, 0, 100);
-            grd.addColorStop(0, '#fff0f5');   // Lavender blush (tâm)
-            grd.addColorStop(0.4, '#ffb7c5'); // Sakura pink
-            grd.addColorStop(0.9, '#ff9ebb'); // Darker pink
-            grd.addColorStop(1, '#ff6b9d');   // Edge border
+            grd.addColorStop(0, '#fff0f5');   
+            grd.addColorStop(0.4, '#ffb7c5'); 
+            grd.addColorStop(0.9, '#ff9ebb'); 
+            grd.addColorStop(1, '#ff6b9d');   
             
             ctx.fillStyle = grd;
             ctx.fill();
 
-            // Vẽ gân lá (Veins) cho real
+            // Veins
             ctx.globalCompositeOperation = 'multiply';
             ctx.strokeStyle = 'rgba(200, 50, 80, 0.15)';
             ctx.lineWidth = 2;
@@ -309,12 +312,12 @@
         }
 
         // ----------------------------------------------------
-        // 2. SHADERS (Real Physics Update)
+        // 2. SHADERS (Real Physics)
         // ----------------------------------------------------
         const sakuraVertexShader = `
             uniform float time;
             attribute float scale;
-            attribute vec3 randoms; // x: speed, y: rot speed, z: phase
+            attribute vec3 randoms; 
             
             varying vec2 vUv;
             varying float vAlpha;
@@ -322,36 +325,26 @@
             void main() {
                 vUv = uv;
                 
+                // Nếu scale = 0, cánh hoa sẽ biến mất. Attribute này rất quan trọng!
                 vec3 pos = position * scale;
                 vec3 instancePos = instanceMatrix[3].xyz;
                 
-                // Physics: "Falling Leaf" motion
-                // Hoa không rơi thẳng mà lướt qua lại
+                // Physics: "Falling Leaf"
+                float t = time * (0.2 + randoms.x * 0.3); 
                 
-                float t = time * (0.2 + randoms.x * 0.3); // Time scale per particle
-                
-                // Vertical Fall (Trọng lực + Loop)
                 float yVal = -mod(t * 2.0 + instancePos.y, 8.0) + 4.0;
                 
-                // Horizontal Sway (Lắc lư)
-                // Kết hợp 2 sóng sin để tạo quỹ đạo không đều
                 float swayX = sin(t * 1.5 + randoms.z * 10.0) * (0.5 + randoms.y);
                 float swayZ = cos(t * 1.2 + randoms.z * 5.0) * (0.3 + randoms.y);
                 
-                // Rotation (Tumble)
-                // Hoa xoay hỗn loạn khi rơi
                 float rotX = t * 2.0 + randoms.y * 5.0;
                 float rotY = t * 1.0 + randoms.z;
-                float rotZ = t * 0.5;
                 
-                // Apply rotation manually (Simplified Euler)
                 float cx = cos(rotX), sx = sin(rotX);
                 float cy = cos(rotY), sy = sin(rotY);
                 
                 vec3 p = pos;
-                // Rot X
                 vec3 p1 = vec3(p.x, p.y*cx - p.z*sx, p.y*sx + p.z*cx);
-                // Rot Y
                 vec3 p2 = vec3(p1.x*cy + p1.z*sy, p1.y, -p1.x*sy + p1.z*cy);
                 
                 vec3 finalPos = instancePos;
@@ -361,7 +354,6 @@
                 
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(finalPos + p2, 1.0);
                 
-                // Fade in/out at top/bottom boundaries
                 float fadeTop = smoothstep(4.0, 3.0, yVal);
                 float fadeBot = smoothstep(-3.0, -4.0, yVal);
                 vAlpha = min(fadeTop, 1.0 - fadeBot); 
@@ -376,13 +368,8 @@
             void main() {
                 vec4 texColor = texture2D(map, vUv);
                 if (texColor.a < 0.1) discard;
-                
-                // Tăng độ rực rỡ một chút
                 vec3 color = texColor.rgb * 1.1;
-                
                 gl_FragColor = vec4(color, texColor.a * vAlpha);
-                
-                // Tone mapping fix
                 gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(1.0/2.2)); 
             }
         `;
@@ -399,38 +386,31 @@
                 uiLoading: 'no', uiScanning: 'no', maxTrack: 1
             });
 
-            // [CRITICAL] PRESERVE DRAWING BUFFER = TRUE
-            // Để chụp ảnh không bị mất AR layer
             renderer = new THREE.WebGLRenderer({
-                canvas: mindarThree.renderer.domElement, // Reuse canvas created by mindar
+                canvas: mindarThree.renderer.domElement,
                 alpha: true,
                 antialias: true,
                 preserveDrawingBuffer: true,
                 powerPreference: 'high-performance'
             });
             
-            // Re-assign renderer back to mindar wrapper (hacky but needed for custom config)
             mindarThree.renderer = renderer;
             scene = mindarThree.scene;
             camera = mindarThree.camera;
 
-            // Renderer Setup
             renderer.outputColorSpace = THREE.SRGBColorSpace;
             renderer.toneMapping = THREE.ReinhardToneMapping;
             renderer.toneMappingExposure = 1.2;
             
-            // Light
             const ambient = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambient);
             const dirLight = new THREE.DirectionalLight(0xffeeb1, 1.0);
             dirLight.position.set(0, 5, 5);
             scene.add(dirLight);
 
-            // Anchor & Sakura
             const anchor = mindarThree.addAnchor(0);
             setupSakuraSystem(anchor.group);
 
-            // TRACKING EVENTS
             anchor.onTargetFound = () => {
                 isTracking = true;
                 updateUIState(true);
@@ -456,8 +436,6 @@
         };
 
         function setupSakuraSystem(group) {
-            // Dùng Plane cong để cánh hoa tự nhiên hơn (Optional, nhưng tốn perf)
-            // Ta dùng Plane phẳng + Shader rotation 3D để tối ưu mobile
             const geometry = new THREE.PlaneGeometry(CONFIG.petalSize, CONFIG.petalSize);
             const instancedGeo = new THREE.InstancedBufferGeometry();
             instancedGeo.index = geometry.index;
@@ -466,6 +444,7 @@
 
             const count = CONFIG.petalCount;
             const randoms = new Float32Array(count * 3);
+            const scales = new Float32Array(count); // [FIX] Đã thêm mảng scales
             const matrices = [];
             const obj = new THREE.Object3D();
 
@@ -474,16 +453,18 @@
                 randoms[i*3+1] = Math.random();
                 randoms[i*3+2] = Math.random();
 
+                // Tạo scale ngẫu nhiên cho từng cánh hoa
+                scales[i] = 0.5 + Math.random() * 0.8; 
+
                 obj.position.set(
-                    (Math.random() - 0.5) * 5, // X rộng ra
-                    (Math.random() - 0.5) * 6, // Y cao
-                    (Math.random() - 0.5) * 3  // Z sâu
+                    (Math.random() - 0.5) * 5, 
+                    (Math.random() - 0.5) * 6, 
+                    (Math.random() - 0.5) * 3 
                 );
-                // Random orientation ban đầu
                 obj.rotation.set(Math.random()*3, Math.random()*3, Math.random()*3);
                 
-                // Scale ngẫu nhiên
-                const s = 0.5 + Math.random() * 0.8;
+                // Scale matrix cũng quan trọng cho bounding volume nhưng shader dùng attribute riêng
+                const s = scales[i];
                 obj.scale.set(s, s, s);
                 
                 obj.updateMatrix();
@@ -507,14 +488,15 @@
             
             sakuraMesh.instanceMatrix.needsUpdate = true;
             sakuraMesh.geometry.setAttribute('randoms', new THREE.InstancedBufferAttribute(randoms, 3));
+            // [FIX] Gán attribute scale vào geometry để shader đọc được
+            sakuraMesh.geometry.setAttribute('scale', new THREE.InstancedBufferAttribute(scales, 1));
             
-            // Scale toàn bộ hệ thống hạt để bao phủ anchor
             sakuraMesh.scale.set(1.5, 1.5, 1.5);
             group.add(sakuraMesh);
         }
 
         // ----------------------------------------------------
-        // 4. UI LOGIC (Fixing UX issues)
+        // 4. UI LOGIC
         // ----------------------------------------------------
 
         function updateUIState(found) {
@@ -525,27 +507,23 @@
                 uiControls.classList.add('fade-in');
             } else {
                 uiScan.classList.remove('hidden');
-                void uiScan.offsetWidth; // force reflow
+                void uiScan.offsetWidth; 
                 uiScan.style.opacity = 1;
                 uiBrand.classList.remove('fade-in');
                 uiControls.classList.remove('fade-in');
             }
         }
 
-        // [FIX] CAMERA SWITCH LOGIC
         const switchBtn = document.getElementById('switchCameraBtn');
         switchBtn.addEventListener('click', async () => {
             if(!mindarThree) return;
             
-            // 1. Force Reset UI state IMMEDIATELY (UX fix)
             isTracking = false;
             updateUIState(false);
             
-            // 2. Animation
             switchBtn.style.transform = "rotate(180deg)";
             setTimeout(() => switchBtn.style.transform = "rotate(0deg)", 400);
 
-            // 3. Switch
             try {
                 await mindarThree.switchCamera();
             } catch(e) {
@@ -553,31 +531,25 @@
             }
         });
 
-        // [FIX] CAPTURE LOGIC (MERGING LAYERS)
         const captureBtn = document.getElementById('captureBtn');
         const modal = document.getElementById('preview-modal');
         const previewImg = document.getElementById('preview-img');
         const flash = document.getElementById('flash');
 
         captureBtn.addEventListener('click', () => {
-            // Flash Effect
             flash.style.opacity = 1;
             setTimeout(() => flash.style.opacity = 0, 100);
 
-            // DOM Elements
-            const video = document.querySelector('video'); // MindAR video background
-            const canvas = document.querySelector('canvas'); // ThreeJS AR layer
+            const video = document.querySelector('video'); 
+            const canvas = document.querySelector('canvas'); 
             
             if(!video || !canvas) return;
 
-            // Create Merge Canvas
             const mCanvas = document.createElement('canvas');
             mCanvas.width = canvas.width;
             mCanvas.height = canvas.height;
             const ctx = mCanvas.getContext('2d');
 
-            // 1. Draw Video Feed (Background)
-            // Tính toán cover fit
             const vRatio = video.videoWidth / video.videoHeight;
             const cRatio = canvas.width / canvas.height;
             let dw, dh, dx, dy;
@@ -590,31 +562,23 @@
                 dx = 0; dy = (canvas.height - dh) / 2;
             }
             ctx.drawImage(video, dx, dy, dw, dh);
-
-            // 2. Draw AR Layer (Sakura)
-            // Nhờ preserveDrawingBuffer: true, canvas này không bị trắng
             ctx.drawImage(canvas, 0, 0);
 
-            // 3. Draw Watermark Manually (Vì ta không capture được DOM Overlay)
             const w = mCanvas.width;
             const h = mCanvas.height;
-            const p = w * 0.05; // padding
+            const p = w * 0.05; 
 
-            // Logo Style
             ctx.shadowColor = "rgba(0,0,0,0.5)";
             ctx.shadowBlur = 4;
             ctx.fillStyle = "white";
             
-            // Brand Name
             ctx.font = `bold ${w * 0.07}px 'Playfair Display'`;
             ctx.fillText("Uniquely Yours", p, h - p * 1.8);
             
-            // Tagline
             ctx.font = `500 ${w * 0.035}px 'Montserrat'`;
             ctx.letterSpacing = "2px";
             ctx.fillText("PREMIUM EXPERIENCE", p, h - p);
 
-            // Decorative Line
             ctx.strokeStyle = "rgba(255,183,197, 0.8)";
             ctx.lineWidth = 3;
             ctx.beginPath();
@@ -622,11 +586,9 @@
             ctx.lineTo(p + w * 0.1, h - p * 2.6);
             ctx.stroke();
 
-            // Show Result
             previewImg.src = mCanvas.toDataURL('image/jpeg', 0.95);
             modal.style.display = 'flex';
             
-            // Setup Download
             document.getElementById('downloadBtn').onclick = () => {
                 const link = document.createElement('a');
                 link.download = `JCB-AR-${Date.now()}.jpg`;
