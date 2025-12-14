@@ -50,6 +50,61 @@
             justify-content: space-between;
         }
 
+        /* --- FOREGROUND EFFECTS (New) --- */
+        #foreground-effects {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 5; /* Dưới UI controls nhưng trên video */
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+        
+        #foreground-effects.visible {
+            opacity: 1;
+        }
+
+        /* Vignette Effect */
+        .vignette {
+            position: absolute;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 50%, rgba(233, 30, 99, 0.15) 100%);
+            mix-blend-mode: screen;
+        }
+
+        /* Sakura Branches SVG */
+        .branch-deco {
+            position: absolute;
+            width: 180px;
+            height: auto;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .branch-tl {
+            top: -20px;
+            left: -20px;
+            transform: rotate(-10deg);
+            animation: sway 5s ease-in-out infinite alternate;
+        }
+
+        .branch-br {
+            bottom: -20px;
+            right: -20px;
+            transform: rotate(170deg);
+            animation: sway 6s ease-in-out infinite alternate-reverse;
+        }
+
+        @keyframes sway {
+            from { transform: rotate(-10deg) translate(0, 0); }
+            to { transform: rotate(-5deg) translate(5px, 5px); }
+        }
+        
+        /* Animation riêng cho nhánh dưới */
+        @keyframes sway-bottom {
+            from { transform: rotate(170deg) translate(0, 0); }
+            to { transform: rotate(175deg) translate(-5px, -5px); }
+        }
+
         /* --- VIEWFINDER CORNERS (Pro Camera Feel) --- */
         .viewfinder-corner {
             position: absolute;
@@ -65,10 +120,10 @@
         .vf-bl { bottom: 20px; left: 20px; border-width: 0 0 2px 2px; border-radius: 0 0 0 8px; }
         .vf-br { bottom: 20px; right: 20px; border-width: 0 2px 2px 0; border-radius: 0 0 8px 0; }
         
-        /* Khi tracking active, khung chuyển màu xanh nhẹ */
         .tracking-active .viewfinder-corner {
-            border-color: #4caf50; 
+            border-color: #ff80ab; /* Đổi màu hồng nhẹ khi active */
             width: 50px; height: 50px;
+            opacity: 0.5; /* Mờ đi chút để không rối */
         }
 
         /* --- TOP BAR --- */
@@ -81,17 +136,15 @@
             z-index: 20;
         }
 
-        /* Logo JCB Minimal - Chỉnh sửa hiển thị theo trạng thái tracking */
         .logo-minimal {
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            opacity: 0; /* Ẩn mặc định */
+            opacity: 0;
             transform: translateY(-10px);
             transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
         }
         
-        /* Class hiển thị khi tracking active */
         .logo-minimal.visible {
             opacity: 1;
             transform: translateY(0);
@@ -194,10 +247,10 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            opacity: 0; /* Hidden by default */
+            opacity: 0;
             transform: translateY(20px);
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: none; /* Disable click when hidden */
+            pointer-events: none;
         }
         
         #shutter-container.visible {
@@ -241,10 +294,10 @@
             background: rgba(0,0,0,0.3);
             padding: 4px 8px;
             border-radius: 4px;
-            display: none; /* Controlled by JS */
+            display: none; 
         }
 
-        /* --- REVIEW MODAL (New Feature) --- */
+        /* --- REVIEW MODAL --- */
         #review-modal {
             position: fixed;
             top: 0;
@@ -394,6 +447,37 @@
 
     <!-- UI Overlay -->
     <div id="ui-layer">
+        <!-- New Foreground Effects Layer -->
+        <div id="foreground-effects">
+            <div class="vignette"></div>
+            <!-- SVG Branch Top Left -->
+            <svg class="branch-deco branch-tl" viewBox="0 0 100 100" fill="none">
+                <path d="M-10,10 Q30,20 60,60" stroke="#5D4037" stroke-width="2" />
+                <path d="M60,60 Q70,70 80,65" stroke="#5D4037" stroke-width="1.5" />
+                <path d="M30,30 Q40,10 50,15" stroke="#5D4037" stroke-width="1.5" />
+                <!-- Flowers -->
+                <circle cx="60" cy="60" r="5" fill="#F8BBD0" />
+                <circle cx="58" cy="58" r="2" fill="#E91E63" />
+                <circle cx="80" cy="65" r="4" fill="#F8BBD0" />
+                <circle cx="50" cy="15" r="4" fill="#F8BBD0" />
+                <circle cx="20" cy="20" r="6" fill="#F48FB1" />
+                <circle cx="40" cy="40" r="3" fill="#FCE4EC" />
+            </svg>
+            <!-- SVG Branch Bottom Right -->
+            <svg class="branch-deco branch-br" viewBox="0 0 100 100" fill="none">
+                <path d="M110,90 Q70,80 40,40" stroke="#5D4037" stroke-width="2" />
+                <path d="M40,40 Q30,30 20,35" stroke="#5D4037" stroke-width="1.5" />
+                <path d="M70,70 Q60,90 50,85" stroke="#5D4037" stroke-width="1.5" />
+                <!-- Flowers -->
+                <circle cx="40" cy="40" r="5" fill="#F8BBD0" />
+                <circle cx="42" cy="42" r="2" fill="#E91E63" />
+                <circle cx="20" cy="35" r="4" fill="#F8BBD0" />
+                <circle cx="50" cy="85" r="4" fill="#F8BBD0" />
+                <circle cx="80" cy="80" r="6" fill="#F48FB1" />
+                <circle cx="60" cy="60" r="3" fill="#FCE4EC" />
+            </svg>
+        </div>
+
         <!-- Viewfinder Corners -->
         <div class="viewfinder-corner vf-tl"></div>
         <div class="viewfinder-corner vf-tr"></div>
@@ -435,7 +519,7 @@
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
             </div>
-            <div class="guide-text">Quét backdrop để trải nghiệm</div>
+            <div class="guide-text">Quét thẻ để trải nghiệm</div>
         </div>
 
         <!-- Bottom Shutter -->
@@ -535,6 +619,7 @@
             loader: document.getElementById('loading-screen'),
             guide: document.getElementById('guide-box'),
             logo: document.querySelector('.logo-minimal'),
+            foregroundEffects: document.getElementById('foreground-effects'), // New Reference
             statsPanel: document.getElementById('stats-panel'),
             fpsValue: document.getElementById('fps-value'),
             particleValue: document.getElementById('particle-value'),
@@ -812,6 +897,7 @@
                 if(UI.guide) UI.guide.style.opacity = 0;
                 if(UI.shutterContainer) UI.shutterContainer.classList.add('visible');
                 if(UI.logo) UI.logo.classList.add('visible'); 
+                if(UI.foregroundEffects) UI.foregroundEffects.classList.add('visible'); // Show effects
                 document.body.classList.add('tracking-active');
                 STATE.anchor.group.visible = true;
                 showToast('Đã nhận diện thẻ!', '🌸');
@@ -822,6 +908,7 @@
                 if(UI.guide) UI.guide.style.opacity = 1;
                 if(UI.shutterContainer) UI.shutterContainer.classList.remove('visible');
                 if(UI.logo) UI.logo.classList.remove('visible');
+                if(UI.foregroundEffects) UI.foregroundEffects.classList.remove('visible'); // Hide effects
                 document.body.classList.remove('tracking-active');
                 showToast('Mất tín hiệu', '⚠️');
             };
@@ -834,6 +921,7 @@
                     if(UI.guide) UI.guide.style.opacity = 1;
                     if(UI.shutterContainer) UI.shutterContainer.classList.remove('visible');
                     if(UI.logo) UI.logo.classList.remove('visible'); 
+                    if(UI.foregroundEffects) UI.foregroundEffects.classList.remove('visible');
                     if (STATE.anchor && STATE.anchor.group) {
                         STATE.anchor.group.visible = false;
                     }
@@ -976,6 +1064,13 @@
                 ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
                 ctx.fillText("AR EXPERIENCE", x, y + fontSizeSub * 1.5);
                 ctx.restore();
+                
+                // Draw Decorative Branches for Screenshot
+                // (Optional simplified version for canvas drawing to match UI roughly)
+                // Drawing complex SVG paths on canvas manually is tedious without library.
+                // We will skip manual drawing of branches on screenshot to keep code simple 
+                // and avoid external dependencies as per instruction "simple logic".
+                // The UI overlay provides the experience during capture.
             }
 
             STATE.capturedDataUrl = tempCanvas.toDataURL('image/png', 1.0);
